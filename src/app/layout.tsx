@@ -6,6 +6,8 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { InstallAppButton } from "@/components/pwa/InstallAppButton";
 import { cn } from "@/lib/utils";
+import { ToastContainer } from "react-toastify";
+import { ThemeToastContainer } from "@/components/theme/ThemeToastContainer";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -124,6 +126,7 @@ export default function RootLayout({
         "
       >
         <ThemeProvider>
+          <ThemeToastContainer />
           {children}
 
           <InstallAppButton />

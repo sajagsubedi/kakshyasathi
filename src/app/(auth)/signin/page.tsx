@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
@@ -17,6 +17,8 @@ import { z } from "zod";
 import { signInSchema } from "@/schemas/signInSchema";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 /* =========================================================
    SIGN IN FORM
@@ -34,39 +36,26 @@ function SignInForm() {
       password: "",
     },
   });
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") || "/";
+
+  useEffect(() => {
+    router.refresh();
+  }, [router]);
 
   const onSubmit = async (data: z.infer<typeof signInSchema>) => {
-    try {
-      console.log("Form submitted:", data);
+    const result = await signIn("credentials", {
+      redirect: false,
+      username: data.username,
+      password: data.password,
+    });
 
-      /*
-       * TODO:
-       * Replace this with your actual authentication request.
-       *
-       * Example:
-       *
-       * const response = await fetch("/api/auth/signin", {
-       *   method: "POST",
-       *   headers: {
-       *     "Content-Type": "application/json",
-       *   },
-       *   body: JSON.stringify(data),
-       * });
-       *
-       * if (!response.ok) {
-       *   throw new Error("Invalid username or password");
-       * }
-       *
-       * router.push("/dashboard");
-       */
-
-      toast.success("Signed in successfully!");
-    } catch (err) {
-      toast.error(
-        err instanceof Error
-          ? err.message
-          : "Something went wrong. Please try again.",
-      );
+    if (result?.error) {
+      toast.error("Invalid credentials");
+    } else {
+      router.refresh();
+      router.push(callbackUrl);
     }
   };
 
