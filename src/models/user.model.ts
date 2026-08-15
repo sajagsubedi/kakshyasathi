@@ -1,10 +1,9 @@
-import mongoose, { Document, Schema } from "mongoose";
+import mongoose, { Document, Schema, Types } from "mongoose";
 import bcrypt from "bcryptjs";
 
 export enum UserRole {
   STUDENT = "STUDENT",
   TEACHER = "TEACHER",
-  CLASS = "CLASS",
   ADMIN = "ADMIN",
 }
 
@@ -16,6 +15,9 @@ export interface User extends Document {
   fullName: string;
   username: string;
   phone?: string;
+  rollNumber?: string;
+  classId?: Types.ObjectId;
+  sectionId?: Types.ObjectId;
   userRole: UserRole;
   password: string;
   isPasswordCorrect: (password: string) => Promise<boolean>;
@@ -26,14 +28,8 @@ export interface User extends Document {
 const userSchema = new Schema<User>(
   {
     profilePicture: {
-      url: {
-        type: String,
-        required: false,
-      },
-      fileId: {
-        type: String,
-        required: false,
-      },
+      url: { type: String, required: false },
+      fileId: { type: String, required: false },
     },
     fullName: {
       type: String,
@@ -48,6 +44,7 @@ const userSchema = new Schema<User>(
       minlength: 3,
       maxlength: 50,
       trim: true,
+      lowercase: true,
     },
     password: {
       type: String,
@@ -58,7 +55,18 @@ const userSchema = new Schema<User>(
     phone: {
       type: String,
       maxlength: 15,
-      match: [/^[\+]?[1-9][\d]{0,15}$/, "Please use a valid phone number"],
+    },
+    rollNumber: {
+      type: String,
+      maxlength: 20,
+    },
+    classId: {
+      type: Schema.Types.ObjectId,
+      ref: "Class",
+    },
+    sectionId: {
+      type: Schema.Types.ObjectId,
+      ref: "Section",
     },
     userRole: {
       type: String,
@@ -70,16 +78,19 @@ const userSchema = new Schema<User>(
   { timestamps: true },
 );
 
+userSchema.index({ username: 1 });
+userSchema.index({ userRole: 1 });
+userSchema.index({ sectionId: 1 });
+
 userSchema.pre("save", async function () {
   if (!this.isModified("password")) return;
-
   this.password = await bcrypt.hash(this.password, 10);
 });
 
 userSchema.methods.isPasswordCorrect = async function (
   password: string,
 ): Promise<boolean> {
-  return await bcrypt.compare(password, this.password);
+  return bcrypt.compare(password, this.password);
 };
 
 const UserModel =

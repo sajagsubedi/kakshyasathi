@@ -1619,8 +1619,7 @@ For a teacher scan:
 # 52. Timetable Resolution
 
 The system determines the effective timetable using:
-
-```text
+ n
 Date
 +
 Current Time
