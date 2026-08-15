@@ -3,7 +3,7 @@ import Credentials from "next-auth/providers/credentials";
 import { ZodError } from "zod";
 
 import { signInSchema } from "@/schemas/signInSchema";
-import UserModel from "@/models/user.model";
+import UserModel, { UserRole } from "@/models/user.model";
 import connectDb from "./connectDB";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -17,6 +17,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           label: "Username",
           type: "text",
         },
+
         password: {
           label: "Password",
           type: "password",
@@ -31,12 +32,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             await signInSchema.parseAsync(credentials);
 
           const existingUser = await UserModel.findOne({
-            username: username.trim(),
+            username: username.trim().toLowerCase(),
           });
 
           if (!existingUser) {
             return null;
           }
+
           const isPasswordCorrect =
             await existingUser.isPasswordCorrect(password);
 
@@ -45,17 +47,23 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           }
 
           return {
-            id: existingUser._id.toString(),
+            _id: existingUser._id.toString(),
+
             username: existingUser.username,
+
             fullName: existingUser.fullName,
+
             profilePicture: existingUser.profilePicture ?? null,
+
             userRole: existingUser.userRole,
           };
         } catch (error) {
           if (error instanceof ZodError) {
             return null;
           }
+
           console.error("NextAuth authorize error:", error);
+
           return null;
         }
       },
@@ -74,13 +82,17 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
       return token;
     },
+
     async session({ session, token }) {
       if (session.user) {
-        session.user._id = token._id ?? "";
-        session.user.username = token.username ?? "";
-        session.user.fullName = token.fullName ?? "";
-        session.user.profilePicture = token.profilePicture ?? null;
-        session.user.userRole = token.userRole ?? UserRole.STUDENT;
+        session.user._id = token._id as string;
+        session.user.username = token.username as string;
+        session.user.fullName = token.fullName as string;
+        session.user.profilePicture = (token.profilePicture ?? null) as {
+          url: string;
+          fileId: string;
+        } | null;
+        session.user.userRole = token.userRole as UserRole;
       }
       return session;
     },
@@ -88,6 +100,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
   session: {
     strategy: "jwt",
+
     maxAge: 30 * 24 * 60 * 60,
   },
 

@@ -277,6 +277,14 @@
    ========================================================= */
 
 @layer utilities {
+  .bg-brand-gradient {
+    background: linear-gradient(
+      135deg,
+      var(--chart-2) 0%,
+      var(--primary) 50%,
+      var(--chart-3) 100%
+    );
+  }
   .text-brand {
     color: #4f46e5;
   }
@@ -297,7 +305,4 @@
     border-color: #6366f1;
   }
 
-  .bg-brand-gradient {
-    background: linear-gradient(135deg, #3730a3 0%, #4f46e5 50%, #7c3aed 100%);
-  }
 }

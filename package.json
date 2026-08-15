@@ -6,6 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "create-admin": "tsx src/scripts/create-admin.ts",
     "lint": "eslint"
   },
   "dependencies": {
@@ -35,6 +36,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.1",
     "tailwindcss": "^4",
+    "tsx": "^4.23.12",
     "typescript": "^5"
   }
 }

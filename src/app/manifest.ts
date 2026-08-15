@@ -4,22 +4,14 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Kakshyasathi",
     short_name: "Kakshyasathi",
-
     description:
       "Smart classroom and school management platform.",
-
     start_url: "/",
-
     scope: "/",
-
     display: "standalone",
-
     orientation: "portrait-primary",
-
     background_color: "#ffffff",
-
     theme_color: "#4f46e5",
-
     categories: [
       "education",
       "productivity",
@@ -31,7 +23,6 @@ export default function manifest(): MetadataRoute.Manifest {
         sizes: "192x192",
         type: "image/png",
       },
-
       {
         src: "/icons/icon-512.png",
         sizes: "512x512",
