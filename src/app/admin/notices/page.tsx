@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { adminNav } from '@/lib/nav';
+import { adminNav, adminBottomNav } from '@/lib/nav';
 import { useAdminNotices, useSharedLookup, useCreateNotice } from '@/hooks/useApi';
 
 type NoticeFormState = {
@@ -50,7 +50,7 @@ export default function AdminNoticesPage() {
   };
 
   return (
-    <DashboardLayout items={adminNav} title="Kakshyasathi" subtitle="Admin Portal" pageTitle="Notices" pageDescription="Send and manage school announcements" allowedRoles={['ADMIN']}>
+    <DashboardLayout items={adminNav} title="Kakshyasathi" subtitle="Admin Portal" pageTitle="Notices" pageDescription="Send and manage school announcements" allowedRoles={['ADMIN']} bottomNavItems={adminBottomNav}>
       <PageHeader title="Notice Board" description={`${notices.length} notices created`} action={<Button onClick={() => setDialogOpen(true)}><Plus className="mr-2 h-4 w-4" />New Notice</Button>} />
       <div className="grid gap-4">
         {notices.map((notice) => {

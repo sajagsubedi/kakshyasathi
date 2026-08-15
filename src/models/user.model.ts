@@ -15,6 +15,14 @@ export interface User extends Document {
   fullName: string;
   username: string;
   phone?: string;
+  email?: string | null;
+  dateOfBirth?: Date;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  address?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  emergencyContact?: string;
+  admissionDate?: Date;
   rollNumber?: string;
   classId?: Types.ObjectId;
   sectionId?: Types.ObjectId;
@@ -56,6 +64,37 @@ const userSchema = new Schema<User>(
       type: String,
       maxlength: 15,
     },
+    email: {
+      type: String,
+      maxlength: 100,
+      sparse: true,
+    },
+    dateOfBirth: {
+      type: Date,
+    },
+    gender: {
+      type: String,
+      enum: ['MALE', 'FEMALE', 'OTHER'],
+    },
+    address: {
+      type: String,
+      maxlength: 500,
+    },
+    guardianName: {
+      type: String,
+      maxlength: 100,
+    },
+    guardianPhone: {
+      type: String,
+      maxlength: 15,
+    },
+    emergencyContact: {
+      type: String,
+      maxlength: 15,
+    },
+    admissionDate: {
+      type: Date,
+    },
     rollNumber: {
       type: String,
       maxlength: 20,
@@ -78,7 +117,6 @@ const userSchema = new Schema<User>(
   { timestamps: true },
 );
 
-userSchema.index({ username: 1 });
 userSchema.index({ userRole: 1 });
 userSchema.index({ sectionId: 1 });
 

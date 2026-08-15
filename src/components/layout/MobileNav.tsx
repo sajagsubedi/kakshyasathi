@@ -1,9 +1,10 @@
 'use client';
 
 import * as React from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Menu, X, ScanLine } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import type { NavItem } from '@/components/layout/Sidebar';
@@ -19,20 +20,16 @@ export function MobileNav({ items, title }: MobileNavProps) {
 
   return (
     <>
-      <div className="flex h-14 items-center justify-between border-b border-border bg-card px-4 lg:hidden">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1">
-            <ScanLine className="h-4 w-4 text-primary-foreground" />
-          </div>
-          <span className="text-sm font-bold">{title}</span>
-        </div>
+      <div className="flex h-12 items-center justify-between border-b border-border bg-card px-3 lg:hidden">
+        <span className="text-xs font-bold tracking-tight text-muted-foreground">{title}</span>
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setOpen(true)}
           aria-label="Open menu"
+          className="h-8 w-8"
         >
-          <Menu className="h-5 w-5" />
+          <Menu className="h-4 w-4" />
         </Button>
       </div>
 
@@ -45,8 +42,14 @@ export function MobileNav({ items, title }: MobileNavProps) {
           <div className="absolute left-0 top-0 h-full w-72 bg-sidebar shadow-xl animate-slide-in-right">
             <div className="flex h-14 items-center justify-between border-b border-sidebar-border px-4">
               <div className="flex items-center gap-2">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary p-1">
-                  <ScanLine className="h-4 w-4 text-primary-foreground" />
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 p-1">
+                  <Image
+                    src="/logo/icon.png"
+                    alt={title}
+                    width={22}
+                    height={22}
+                    className="h-full w-full object-contain"
+                  />
                 </div>
                 <span className="text-sm font-bold">{title}</span>
               </div>

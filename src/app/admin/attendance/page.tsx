@@ -30,7 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { adminNav } from "@/lib/nav";
+import { adminNav, adminBottomNav } from "@/lib/nav";
 import {
   useAdminAttendance,
   useAdminSections,
@@ -41,6 +41,9 @@ export default function AdminAttendancePage() {
   const [sectionFilter, setSectionFilter] = React.useState<string | null>(
     "ALL",
   );
+  const handleSectionChange = (value: string | null) => {
+    setSectionFilter(value ?? "ALL");
+  };
   const { data: sections = [] } = useAdminSections();
   const { data: attendance = [] } = useAdminAttendance(
     sectionFilter === "ALL" || !sectionFilter ? undefined : sectionFilter,
@@ -84,6 +87,7 @@ export default function AdminAttendancePage() {
       pageTitle="Attendance"
       pageDescription="View and manage student attendance"
       allowedRoles={["ADMIN"]}
+      bottomNavItems={adminBottomNav}
     >
       <PageHeader
         title="Attendance Records"
@@ -118,7 +122,7 @@ export default function AdminAttendancePage() {
       </div>
       <Select
         value={sectionFilter ?? "ALL"}
-        onValueChange={(value) => setSectionFilter(value ?? "ALL")}
+        onValueChange={(value: string | null) => handleSectionChange(value)}
       >
         <SelectTrigger className="mb-4 w-full sm:w-56">
           <SelectValue placeholder="Filter section" />
@@ -153,13 +157,20 @@ export default function AdminAttendancePage() {
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <Avatar className="h-7 w-7">
-                        <AvatarFallback className="text-xs">
-                          {student?.fullName?.slice(0, 2) ?? "?"}
+                        <AvatarFallback className="text-xs bg-muted">
+                          {student
+                            ? student.fullName.split(' ').map((n) => n[0]).slice(0, 2).join('')
+                            : "?"}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="text-sm">
-                        {student?.fullName ?? record.studentId}
-                      </span>
+                      <div>
+                        <span className="text-sm font-medium">
+                          {student?.fullName ?? 'Unknown Student'}
+                        </span>
+                        {student?.rollNumber && (
+                          <p className="text-[10px] text-muted-foreground">Roll: {student.rollNumber}</p>
+                        )}
+                      </div>
                     </div>
                   </TableCell>
                   <TableCell className="text-sm">

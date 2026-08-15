@@ -11,6 +11,14 @@ export interface User {
   sectionId?: string;
   profilePicture?: string;
   createdAt?: string;
+  email?: string;
+  dateOfBirth?: string;
+  gender?: 'MALE' | 'FEMALE' | 'OTHER';
+  address?: string;
+  guardianName?: string;
+  guardianPhone?: string;
+  emergencyContact?: string;
+  admissionDate?: string;
 }
 
 export interface Class {

@@ -31,7 +31,6 @@ const smartBoardSchema = new Schema<SmartBoardDoc>(
   { timestamps: true },
 );
 
-smartBoardSchema.index({ deviceId: 1 });
 smartBoardSchema.index({ sectionId: 1 });
 
 smartBoardSchema.pre("save", async function () {

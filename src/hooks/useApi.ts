@@ -23,7 +23,9 @@ export const queryKeys = {
   adminDashboard: ['admin', 'dashboard'] as const,
   adminLookup: ['admin', 'lookup'] as const,
   adminUsers: (role?: string) => ['admin', 'users', role] as const,
+  adminUserDetail: (id: string) => ['admin', 'users', 'detail', id] as const,
   adminClasses: ['admin', 'classes'] as const,
+  adminClassDetail: (id: string) => ['admin', 'classes', 'detail', id] as const,
   adminSections: ['admin', 'sections'] as const,
   adminSubjects: ['admin', 'subjects'] as const,
   adminSmartBoards: ['admin', 'smartboards'] as const,
@@ -97,6 +99,71 @@ export function useCreateUser() {
       qc.invalidateQueries({ queryKey: ['admin', 'users'] });
       qc.invalidateQueries({ queryKey: queryKeys.adminLookup });
     },
+  });
+}
+
+export interface UserDetailResponse {
+  user: User;
+  attendance: {
+    total: number;
+    present: number;
+    absent: number;
+    late: number;
+    records: StudentAttendance[];
+  };
+  presence: {
+    total: number;
+    records: TeacherPresence[];
+  };
+}
+
+export function useAdminUserById(id?: string) {
+  return useQuery({
+    queryKey: queryKeys.adminUserDetail(id ?? ''),
+    queryFn: () => apiGet<UserDetailResponse>(`/api/admin/users/${id}`),
+    enabled: !!id,
+  });
+}
+
+export function useAdminAttendanceByStudentId(studentId?: string) {
+  return useQuery({
+    queryKey: ['admin', 'attendance', 'student', studentId] as const,
+    queryFn: () => apiGet<StudentAttendance[]>(`/api/admin/attendance?studentId=${studentId}`),
+    enabled: !!studentId,
+  });
+}
+
+export interface ClassDetailResponse {
+  class: Class;
+  sections: Section[] & { studentCount?: number }[];
+  students: User[];
+  teacherCount: number;
+  attendance: {
+    totalRecords: number;
+    today: { present: number; absent: number; late: number };
+    overall: { present: number; absent: number; rate: number };
+    recent: StudentAttendance[];
+  };
+  timetable: Array<{
+    id: string;
+    sectionId: string;
+    dayOfWeek: number;
+    periodId: string;
+    periodNumber: number | null;
+    startTime: string | null;
+    endTime: string | null;
+    subjectId: string;
+    subjectName: string;
+    teacherId: string;
+    teacherName: string;
+  }>;
+}
+
+export function useAdminClassById(id?: string) {
+  return useQuery({
+    queryKey: queryKeys.adminClassDetail(id ?? ''),
+    queryFn: () => apiGet<ClassDetailResponse>(`/api/admin/classes/${id}`),
+    enabled: !!id,
   });
 }
 
@@ -183,6 +250,75 @@ export function useCreateNotice() {
     mutationFn: (body: Record<string, unknown>) =>
       apiPost<Notice>('/api/admin/notices', body),
     onSuccess: () => qc.invalidateQueries({ queryKey: queryKeys.adminNotices }),
+  });
+}
+
+export function useCreateClass() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiPost<Class>('/api/admin/classes', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.adminClasses });
+      qc.invalidateQueries({ queryKey: queryKeys.adminLookup });
+    },
+  });
+}
+
+export function useCreateSection() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiPost<Section>('/api/admin/sections', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.adminSections });
+      qc.invalidateQueries({ queryKey: queryKeys.adminLookup });
+    },
+  });
+}
+
+export function useCreateSubject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiPost<Subject>('/api/admin/subjects', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.adminSubjects });
+      qc.invalidateQueries({ queryKey: queryKeys.adminLookup });
+    },
+  });
+}
+
+export function useCreateSmartBoard() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiPost<SmartBoard>('/api/admin/smartboards', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.adminSmartBoards });
+      qc.invalidateQueries({ queryKey: queryKeys.adminLookup });
+    },
+  });
+}
+
+export function useCreateSubstitution() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiPost<Substitution>('/api/admin/substitutions', body),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin', 'substitutions'] }),
+  });
+}
+
+export function useCreateTimetableEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (body: Record<string, unknown>) =>
+      apiPost<TimetableEntry>('/api/admin/timetable', body),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin', 'timetable'] });
+      qc.invalidateQueries({ queryKey: queryKeys.adminLookup });
+    },
   });
 }
 

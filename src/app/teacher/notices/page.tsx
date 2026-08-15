@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { teacherNav } from '@/lib/nav';
+import { teacherNav, teacherBottomNav } from '@/lib/nav';
 import { useTeacherNotices, useSharedLookup } from '@/hooks/useApi';
 
 export default function TeacherNoticesPage() {
@@ -14,7 +14,7 @@ export default function TeacherNoticesPage() {
   const getSectionName = lookup?.getSectionName ?? ((id: string) => id);
 
   return (
-    <DashboardLayout items={teacherNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Notices" pageDescription="School announcements" allowedRoles={['TEACHER']}>
+    <DashboardLayout items={teacherNav} bottomNavItems={teacherBottomNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Notices" pageDescription="School announcements" allowedRoles={['TEACHER']}>
       <PageHeader title="Notices" description={`${notices.length} active notices`} />
       <div className="grid gap-4">
         {notices.map((notice) => (

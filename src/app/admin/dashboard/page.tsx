@@ -22,7 +22,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { adminNav } from '@/lib/nav';
+import { adminNav, adminBottomNav } from '@/lib/nav';
 import {
   useAdminDashboard,
   useAdminLookup,
@@ -55,6 +55,7 @@ export default function AdminDashboard() {
         subtitle="Admin Portal"
         pageTitle="Dashboard"
         allowedRoles={['ADMIN']}
+        bottomNavItems={adminBottomNav}
       >
         <p className="text-sm text-muted-foreground">Loading dashboard...</p>
       </DashboardLayout>
@@ -83,6 +84,7 @@ export default function AdminDashboard() {
       pageTitle="Dashboard"
       pageDescription={`School overview for today, ${today.toLocaleDateString()}`}
       allowedRoles={['ADMIN']}
+      bottomNavItems={adminBottomNav}
     >
       <PageHeader
         title="School Overview"
@@ -252,9 +254,14 @@ export default function AdminDashboard() {
 
 function QuickAction({ href, icon: Icon, label }: { href: string; icon: React.ComponentType<{ className?: string }>; label: string }) {
   return (
-    <Link href={href} className="flex flex-col items-center gap-2 rounded-xl border border-border bg-muted/30 p-4 text-center transition-all hover:border-primary/30 hover:bg-accent hover:shadow-sm">
-      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10"><Icon className="h-5 w-5 text-primary" /></div>
-      <span className="text-xs font-medium">{label}</span>
+    <Link
+      href={href}
+      className="group flex flex-col items-center gap-2 rounded-xl border border-primary/20 bg-primary p-4 text-center text-primary-foreground shadow-sm shadow-primary/20 transition-all hover:border-primary/40 hover:bg-primary/95 hover:shadow-md hover:shadow-primary/30 active:scale-[0.98]"
+    >
+      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-foreground/15 transition-all group-hover:bg-primary-foreground/25">
+        <Icon className="h-5 w-5 text-primary-foreground" />
+      </div>
+      <span className="text-xs font-semibold">{label}</span>
     </Link>
   );
 }

@@ -1,9 +1,9 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { ScanLine } from 'lucide-react';
 
 export interface NavItem {
   label: string;
@@ -23,13 +23,19 @@ export function Sidebar({ items, title, subtitle }: SidebarProps) {
   return (
     <aside className="hidden w-64 shrink-0 flex-col border-r border-sidebar-border bg-sidebar lg:flex">
       {/* LOGO */}
-      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-5">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary p-1.5">
-          <ScanLine className="h-5 w-5 text-primary-foreground" />
+      <div className="flex h-16 items-center gap-3 border-b border-sidebar-border px-4">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 p-1.5">
+          <Image
+            src="/logo/icon.png"
+            alt={title}
+            width={28}
+            height={28}
+            className="h-full w-full object-contain"
+          />
         </div>
-        <div>
-          <p className="text-sm font-bold text-sidebar-foreground">{title}</p>
-          <p className="text-[11px] text-muted-foreground">{subtitle}</p>
+        <div className="min-w-0">
+          <p className="truncate text-sm font-bold text-sidebar-foreground">{title}</p>
+          <p className="truncate text-[11px] text-muted-foreground">{subtitle}</p>
         </div>
       </div>
 

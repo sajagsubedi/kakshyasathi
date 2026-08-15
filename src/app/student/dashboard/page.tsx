@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { studentNav } from '@/lib/nav';
+import { studentNav, studentBottomNav } from '@/lib/nav';
 import { useStudentProfile, useStudentAttendance, useStudentTimetable, useStudentNotices, useSharedLookup, dayNames } from '@/hooks/useApi';
 
 export default function StudentDashboard() {
@@ -31,7 +31,7 @@ export default function StudentDashboard() {
   const todaySchedule = timetable.filter((t) => t.dayOfWeek === dayIdx);
 
   return (
-    <DashboardLayout items={studentNav} title="Kakshyasathi" subtitle="Student Portal" pageTitle="Dashboard" pageDescription={`Today is ${dayNames[dayIdx]}`} allowedRoles={['STUDENT']}>
+    <DashboardLayout items={studentNav} bottomNavItems={studentBottomNav} title="Kakshyasathi" subtitle="Student Portal" pageTitle="Dashboard" pageDescription={`Today is ${dayNames[dayIdx]}`} allowedRoles={['STUDENT']}>
       <PageHeader title={`Welcome back, ${profile?.fullName?.split(' ')[0] ?? 'Student'}`} description="Your attendance and schedule at a glance" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Attendance Rate" value={`${attendanceRate}%`} icon={TrendingUp} accent="success" trend={`${presentCount} of ${totalDays} days present`} trendUp />

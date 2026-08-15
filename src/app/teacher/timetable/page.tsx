@@ -5,7 +5,7 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { teacherNav } from '@/lib/nav';
+import { teacherNav, teacherBottomNav } from '@/lib/nav';
 import { useTeacherTimetable, useSharedLookup, dayNames } from '@/hooks/useApi';
 
 export default function TeacherTimetablePage() {
@@ -17,7 +17,7 @@ export default function TeacherTimetablePage() {
   const periods = lookup?.periods ?? [];
 
   return (
-    <DashboardLayout items={teacherNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Timetable" pageDescription="Your weekly teaching schedule" allowedRoles={['TEACHER']}>
+    <DashboardLayout items={teacherNav} bottomNavItems={teacherBottomNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Timetable" pageDescription="Your weekly teaching schedule" allowedRoles={['TEACHER']}>
       <PageHeader title="My Timetable" description="Weekly schedule across all assigned sections" />
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" />Weekly Schedule</CardTitle></CardHeader>

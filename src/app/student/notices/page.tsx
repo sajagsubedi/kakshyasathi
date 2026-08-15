@@ -5,14 +5,14 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { studentNav } from '@/lib/nav';
+import { studentNav, studentBottomNav } from '@/lib/nav';
 import { useStudentNotices } from '@/hooks/useApi';
 
 export default function StudentNoticesPage() {
   const { data: notices = [] } = useStudentNotices();
 
   return (
-    <DashboardLayout items={studentNav} title="Kakshyasathi" subtitle="Student Portal" pageTitle="Notices" pageDescription="School announcements for your section" allowedRoles={['STUDENT']}>
+    <DashboardLayout items={studentNav} bottomNavItems={studentBottomNav} title="Kakshyasathi" subtitle="Student Portal" pageTitle="Notices" pageDescription="School announcements for your section" allowedRoles={['STUDENT']}>
       <PageHeader title="Notices" description={`${notices.length} active notices`} />
       <div className="grid gap-4">
         {notices.map((notice) => (

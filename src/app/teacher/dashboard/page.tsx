@@ -8,7 +8,7 @@ import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { teacherNav } from '@/lib/nav';
+import { teacherNav, teacherBottomNav } from '@/lib/nav';
 import { useAuth } from '@/lib/auth-context';
 import { useTeacherTimetable, useTeacherSections, useTeacherPresence, useTeacherNotices, useSharedLookup, dayNames } from '@/hooks/useApi';
 
@@ -26,7 +26,7 @@ export default function TeacherDashboard() {
   const todaySchedule = timetable.filter((t) => t.dayOfWeek === dayIdx);
 
   return (
-    <DashboardLayout items={teacherNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Dashboard" pageDescription={`Today is ${dayNames[dayIdx]}`} allowedRoles={['TEACHER']}>
+    <DashboardLayout items={teacherNav} bottomNavItems={teacherBottomNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Dashboard" pageDescription={`Today is ${dayNames[dayIdx]}`} allowedRoles={['TEACHER']}>
       <PageHeader title={`Welcome back, ${user?.fullName?.split(' ')[0] ?? 'Teacher'}`} description="Your schedule and classroom activity" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Sections" value={sections.length} icon={GraduationCap} accent="primary" />
