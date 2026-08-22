@@ -1,164 +1,217 @@
-export type UserRole = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'SMARTBOARD';
+import { Document, Types } from "mongoose";
 
-export interface User {
-  id: string;
-  username: string;
-  fullName: string;
+// // ---------- Enums / literal unions ----------
+
+export type UserRole = "admin" | "teacher" | "student";
+
+export type DeviceStatus = "online" | "offline" | "syncing" | "maintenance";
+
+export type PersonType = "Student" | "Teacher";
+export type PersonGender = "Male" | "Female" | "Other";
+
+export type ScanEventStatus = "processed" | "duplicate" | "invalid";
+
+export type AttendanceStatus = "present" | "late";
+
+export type NoticeTargetType = "all" | "sections";
+
+export type DayOfWeek =
+  | "sunday"
+  | "monday"
+  | "tuesday"
+  | "wednesday"
+  | "thursday"
+  | "friday"
+  | "saturday";
+
+// // ---------- User & Auth ----------
+
+export interface UserDoc extends Document {
   role: UserRole;
-  phone?: string;
-  rollNumber?: string;
-  classId?: string;
-  sectionId?: string;
-  profilePicture?: string;
-  createdAt?: string;
-  email?: string;
-  dateOfBirth?: string;
-  gender?: 'MALE' | 'FEMALE' | 'OTHER';
-  address?: string;
-  guardianName?: string;
-  guardianPhone?: string;
-  emergencyContact?: string;
-  admissionDate?: string;
+  name: string;
+  email: string;
+  username: string;
+  gender: PersonGender;
+  password: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface Class {
-  id: string;
+export interface StudentDoc extends Document {
+  user: Types.ObjectId; // ref User
+  section: Types.ObjectId; // ref Section
+  rollNumber: string;
+  guardianContact?: string;
+  symbolNumber: string;
+  enrollmentYear: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TeacherDoc extends Document {
+  user: Types.ObjectId; // ref User
+  subjects: Types.ObjectId[]; // ref Subject
+  assignedSections: Types.ObjectId[]; // ref Section
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// // ---------- School structure ----------
+
+export interface AcademicYearDoc extends Document {
+  label: string; // e.g. "2082/83"
+  startDate: Date;
+  endDate: Date;
+  isActive: boolean;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface ClassDoc extends Document {
   name: string;
   grade: number;
   academicYear: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface Section {
-  id: string;
-  classId: string;
+export interface SectionDoc extends Document {
+  class: Types.ObjectId; // ref Class
   name: string;
-  academicYear: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface Subject {
-  id: string;
+export interface SubjectDoc extends Document {
   name: string;
   code: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface Period {
-  id: string;
+export interface ClassroomDoc extends Document {
+  roomNumber: string;
+  createdAt: Date;
+  updatedAt: Date;
+  section: Types.ObjectId; //section
+}
+
+// // ---------- Devices ----------
+
+export interface SmartBoardDoc extends Document {
+  classroom: Types.ObjectId; // ref Classroom
+  deviceKey: string;
+  status: DeviceStatus;
+  lastSeenAt?: Date;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AttendanceTerminalDoc extends Document {
+  terminalCode: string; // e.g. AT-204
+  classroom: Types.ObjectId; // ref Classroom
+  deviceKey: string;
+  status: DeviceStatus;
+  lastSeenAt?: Date;
+  lastSyncedSequence: number;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// // ---------- Timetable ----------
+
+export interface GlobalTimetableDoc extends Document {
+  academicYear: Types.ObjectId; // ref AcademicYear
   periodNumber: number;
+  startTime: string; // "10:15"
+  endTime: string; // "11:00"
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SectionTimetableDoc extends Document {
+  section: Types.ObjectId; // ref Section
+  dayOfWeek: DayOfWeek;
+  periodNumber: number;
+  subject: Types.ObjectId; // ref Subject
+  teacher: Types.ObjectId; // ref Teacher
+  classroom: Types.ObjectId; // ref Classroom
+  customStartTime?: string;
+  customEndTime?: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface SubstitutionDoc extends Document {
+  section: Types.ObjectId; // ref Section
+  periodNumber: number;
+  date: Date;
+  originalTeacher: Types.ObjectId; // ref Teacher
+  substituteTeacher: Types.ObjectId; // ref Teacher
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+// // ---------- Attendance & presence ----------
+
+export interface ScanEventDoc extends Document {
+  terminal: Types.ObjectId; // ref AttendanceTerminal
+  cardCode: string;
+  scannedAt: Date; // terminal's own clock
+  receivedAt: Date; // backend clock
+  sequenceNumber: number;
+  personType: PersonType;
+  person?: Types.ObjectId; // resolved Student or Teacher
+  status: ScanEventStatus;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface AttendanceSessionDoc extends Document {
+  section: Types.ObjectId; // ref Section
+  classroom: Types.ObjectId; // ref Classroom
+  date: Date;
+  periodNumber: number;
+  effectiveTeacher: Types.ObjectId; // ref Teacher
+  effectiveSubject: Types.ObjectId; // ref Subject
   startTime: string;
   endTime: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface SmartBoard {
-  id: string;
-  deviceId: string;
-  name: string;
-  sectionId: string;
-  status: 'ONLINE' | 'OFFLINE';
-  lastSeenAt?: string;
-}
-
-export interface TimetableEntry {
-  id: string;
-  sectionId: string;
-  dayOfWeek: number;
-  periodId: string;
-  subjectId: string;
-  teacherId: string;
-}
-
-export interface Substitution {
-  id: string;
-  sectionId: string;
-  date: string;
-  periodId: string;
-  regularTeacherId: string;
-  substituteTeacherId: string;
-}
-
-export interface PeriodOverride {
-  id: string;
-  sectionId: string;
-  date: string;
-  periodId: string;
-  startTime: string;
-  endTime: string;
-}
-
-export type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE';
-
-export interface StudentAttendance {
-  id: string;
-  studentId: string;
-  sectionId: string;
-  date: string;
+export interface AttendanceRecordDoc extends Document {
+  attendanceSession: Types.ObjectId; // ref AttendanceSession
+  student: Types.ObjectId; // ref Student
+  scanEvent: Types.ObjectId; // ref ScanEvent
+  markedAt: Date;
   status: AttendanceStatus;
-  scannedAt: string;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface TeacherPresence {
-  id: string;
-  teacherId: string;
-  sectionId: string;
-  date: string;
-  periodId: string;
-  enteredAt: string;
-  exitedAt?: string;
-}
-
-export type NoticeTargetType = 'ALL' | 'SELECTED_SECTIONS';
-export type NoticePriority = 'LOW' | 'MEDIUM' | 'HIGH';
-export type NoticeStatus = 'ACTIVE' | 'EXPIRED' | 'DRAFT';
-
-export interface Notice {
-  id: string;
-  title: string;
-  content: string;
-  createdBy: string;
-  targetType: NoticeTargetType;
-  targetSections: string[];
-  priority: NoticePriority;
-  status: NoticeStatus;
-  createdAt: string;
-  expiresAt?: string;
-}
-
-export interface EffectivePeriod {
-  periodId: string;
+export interface TeacherPresenceRecordDoc extends Document {
+  teacher: Types.ObjectId; // ref Teacher
+  classroom: Types.ObjectId; // ref Classroom
+  date: Date;
   periodNumber: number;
-  subjectId: string;
-  subjectName: string;
-  teacherId: string;
-  teacherName: string;
-  isSubstitute: boolean;
-  startTime: string;
-  endTime: string;
+  entryScanEvent: Types.ObjectId; // ref ScanEvent
+  exitScanEvent?: Types.ObjectId; // ref ScanEvent
+  entryTime: Date;
+  exitTime?: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface ClassroomStatus {
-  sectionId: string;
-  sectionName: string;
-  date: string;
-  currentPeriod?: EffectivePeriod;
-  nextPeriod?: EffectivePeriod;
-  attendanceSummary: {
-    present: number;
-    absent: number;
-    late: number;
-    total: number;
-  };
-}
+// // ---------- Notices ----------
 
-export interface DashboardStats {
-  students: number;
-  teachers: number;
-  classes: number;
-  sections: number;
-  presentToday: number;
-  absentToday: number;
-  lateToday: number;
-  attendanceRate: number;
-  activeBoards: number;
-  totalBoards: number;
-  activeNotices: number;
-  substitutionsToday: number;
+export interface NoticeDoc extends Document {
+  title: string;
+  body: string;
+  author: Types.ObjectId; // ref User
+  targetType: NoticeTargetType;
+  targetSections: Types.ObjectId[]; // ref Section, empty when targetType is "all"
+  publishedAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
 }

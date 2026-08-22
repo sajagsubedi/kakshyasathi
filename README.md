@@ -1,25 +1,29 @@
-# Kakshyasathi — Overall System Design
+# Kakshyasathi
 
-> **Kakshyasathi** is a dedicated Smart Classroom Management System for a single school. It combines student attendance, teacher classroom presence, timetables, substitute teachers, classroom Smart Boards, notices, and personal academic information into one centralized platform.
->
-> The system uses the **barcode already present on school ID cards**. Students and teachers do not need new cards or biometric devices. Each classroom Smart Board is connected to a barcode reader and acts as the information center for its Section.
->
-> Kakshyasathi is designed as a **full-stack Next.js Progressive Web App (PWA)** backed by **MongoDB/Mongoose**, with separate experiences and API boundaries for Admin, Teacher, Student, and Smart Board.
+> Kakshyasathi is a dedicated Smart Classroom Management System for a single school. It combines student attendance, teacher classroom presence, timetables, substitute teachers, classroom Smart Boards, attendance terminals, notices, and personal academic information into one centralized platform.
+
+The system uses the existing barcode/QR codes on school ID cards. Students and teachers do not need new cards or biometric devices.
+
+By design, the Smart Board is not connected to the barcode scanner. Instead, every classroom has a separate **Attendance Terminal** consisting of an ESP32, barcode/QR scanner, RTC, local storage, and status indicators.
+
+The Smart Board acts as the **classroom information and display system**, while the Attendance Terminal acts as the **physical attendance capture system**.
 
 ---
 
 # 1. Problem Overview
 
-The existing classroom process has several activities that are handled independently:
+The classroom process contains several activities that need to work together:
 
-- Student attendance is manually recorded.
-- There is no simple way to record when a teacher actually enters their classroom.
-- Substitute teachers may not be immediately visible to students.
-- Timetable changes may occur for specific days or periods.
-- Special periods may require different start or end times.
-- Notices may need to reach all classes, one class, or several selected classes.
-- Students need an easy way to view their attendance and timetable.
-- Smart Boards are present in classrooms but can also serve as a source of live classroom information.
+- Student attendance needs to be recorded quickly.
+- Attendance should continue working even if Wi-Fi or the backend is temporarily unavailable.
+- Teachers should be able to record when they enter and leave classrooms.
+- The school needs to know which teacher is actually conducting a particular period.
+- Substitute teachers need to be reflected immediately.
+- Timetable changes may occur for particular days or periods.
+- Smart Boards should display the current classroom information.
+- Notices may need to reach all classes or selected classes.
+- Students need access to their timetable, attendance history, and notices.
+- Attendance hardware needs to synchronize with the central system when connectivity is restored.
 
 Kakshyasathi brings these activities together into one system.
 
@@ -27,44 +31,47 @@ Kakshyasathi brings these activities together into one system.
 
 # 2. Proposed Solution
 
-The central idea is simple:
+The central idea is:
 
-> **Turn the classroom Smart Board into a connected classroom information center while using the school's existing ID-card barcode for attendance and teacher identification.**
+> **Use a dedicated offline-capable Attendance Terminal to capture physical attendance while using the Smart Board as a live classroom information center.**
 
-The system has four main participants:
+The system has four major participants:
 
 ```text
-             ADMIN
-               │
-               │ manages
-               ▼
-       KAKSHYASATHI SYSTEM
-          │     │     │
-          │     │     │
-          ▼     ▼     ▼
-      STUDENT TEACHER SMART BOARD
-                         │
-                         ▼
-                     CLASSROOM
+                         ADMIN
+                           │
+                           │ manages
+                           ▼
+                  KAKSHYASATHI SYSTEM
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+      STUDENT           TEACHER        CLASSROOM
+          │                │                │
+          │                │          ┌─────┴─────┐
+          │                │          │           │
+          │                │          ▼           ▼
+          │                │     SMART BOARD  ATTENDANCE
+          │                │                    TERMINAL
+          │                │
+          └────────────────┴──────────────┐
+                                          │
+                                          ▼
+                                       BACKEND
 ```
 
-The Admin manages the school's academic structure and daily changes.
+The **Smart Board** displays classroom information.
 
-Students use their ID cards for daily attendance.
+The **Attendance Terminal** captures barcode/QR scans.
 
-Teachers use their ID cards when entering their assigned classroom.
-
-Smart Boards display the current classroom information.
+The **Backend** processes and stores the resulting events, and remains the single source of truth for every decision made above.
 
 ---
 
 # 3. School Structure
 
 Kakshyasathi is designed specifically for **one school**.
-
-There is no multi-school or multi-tenant architecture.
-
-The academic structure is:
 
 ```text
 School
@@ -81,36 +88,29 @@ School
  │
  ├── Students
  │
- └── Smart Boards
+ ├── Classrooms
+ │     │
+ │     ├── Smart Boards
+ │     └── Attendance Terminals
+ │
+ └── Timetables
 ```
 
-A Class can contain multiple Sections.
+All classroom-related operations are performed at the **Section/Classroom level**.
 
-For example:
+A Section represents the group of students.
 
-```text
-Grade 10
-├── Section A
-├── Section B
-└── Section C
-```
+A Classroom represents the physical location.
 
-All classroom-related operations are performed at the **Section level**.
+A Smart Board represents the display device installed in that classroom.
 
-Therefore:
-
-- Students belong to a Section.
-- Smart Boards belong to a Section.
-- Timetables belong to a Section.
-- Attendance belongs to a Section.
-- Notices can target Sections.
-- Teacher assignments are associated with Sections.
+An Attendance Terminal represents the physical attendance device installed in that classroom.
 
 ---
 
 # 4. Roles
 
-The system has three human roles and one device role.
+The system has three human roles and two device types.
 
 ```text
 Human Roles
@@ -119,8 +119,22 @@ Human Roles
 ├── Teacher
 └── Student
 
-Device
-└── Smart Board
+Devices
+│
+├── Smart Board
+└── Attendance Terminal
+```
+
+The two devices have completely different responsibilities.
+
+```text
+SMART BOARD
+    │
+    └── Display information
+
+ATTENDANCE TERMINAL
+    │
+    └── Capture attendance events
 ```
 
 ---
@@ -137,14 +151,16 @@ The Admin manages:
 - Classes
 - Sections
 - Subjects
+- Classrooms
 - Smart Boards
+- Attendance Terminals
 - Student-section assignments
 - Global timetable
-- Section timetables
+- Section timetables (including embedded period-timing overrides)
 - Teacher assignments
 - Substitute teachers
-- Period-time overrides
 - Attendance records
+- Device status
 - Notices
 
 Users are created and managed by the Admin.
@@ -164,9 +180,11 @@ A teacher can access:
 - Substitute assignments
 - Notices
 - Classroom presence history
-- Personal attendance/presence information
+- Personal presence information
 
-When entering a classroom for a period, the teacher scans their school ID card.
+When entering a classroom, the teacher scans their school ID card using the **Attendance Terminal installed in that classroom**.
+
+The teacher does not interact with the Smart Board for attendance.
 
 ---
 
@@ -185,7 +203,7 @@ A student can access:
 
 The student does not manually enter attendance.
 
-Their attendance is recorded through their ID-card barcode.
+Their ID card is scanned using the **Attendance Terminal**.
 
 ---
 
@@ -193,20 +211,28 @@ Their attendance is recorded through their ID-card barcode.
 
 Every classroom has a Smart Board registered with Kakshyasathi.
 
-Each Smart Board is linked to one Section.
+The Smart Board is **not connected to the barcode scanner**.
 
-For example:
+Its purpose is to act as the classroom's information and display system.
 
 ```text
-Smart Board SB-001
-        │
-        ▼
-Grade 10 - Section A
+Smart Board
+     │
+     ▼
+Classroom
+     │
+     ▼
+Backend
+     │
+     ├── Timetable
+     ├── Current Period
+     ├── Teacher
+     ├── Attendance
+     ├── Substitution
+     └── Notices
 ```
 
-The Smart Board therefore automatically knows which classroom it represents.
-
-It displays:
+The Smart Board displays:
 
 - Current date
 - Current time
@@ -219,42 +245,458 @@ It displays:
 - Attendance summary
 - Notices
 - Timetable information
+- Classroom status
+
+The Smart Board continuously communicates with the backend to receive updated classroom information.
 
 ---
 
-# 9. Barcode-Based Attendance
+# 9. Attendance Terminal
 
-The school already provides students and teachers with ID cards containing barcodes.
+Every classroom has a separate Attendance Terminal.
 
-Kakshyasathi reuses those barcodes.
+The Attendance Terminal is responsible for physically capturing student and teacher scans.
 
 ```text
-School ID Card
-      │
-      ▼
-   Barcode
-      │
-      ▼
-Barcode Reader
-      │
-      ▼
-Smart Board
-      │
-      ▼
-Kakshyasathi
+              ATTENDANCE TERMINAL
+                       │
+          ┌────────────┼────────────┐
+          │            │            │
+          ▼            ▼            ▼
+       Scanner        RTC         MicroSD
+        GM66        DS3231        Storage
+          │
+          ▼
+        ESP32
+          │
+     ┌────┴────┐
+     ▼         ▼
+   Wi-Fi    Buzzer/LED
 ```
 
-The barcode value corresponds to the user's school account identifier.
+The terminal contains:
 
-No separate barcode field is required if the system uses the username itself as the barcode value.
+- **ESP32** — main controller
+- **GM66 1D/2D Scanner** — barcode and QR scanner
+- **DS3231 RTC** — accurate local timestamp
+- **MicroSD** — offline event queue
+- **Active Buzzer** — audio feedback
+- **LEDs** — visual feedback
 
 ---
 
-# 10. Student Attendance Flow
+# 10. Attendance Terminal Identity
 
-Student attendance is **day-based**, not period-based.
+Each Attendance Terminal has its own permanent identity, tied to the room it is installed in — not to any particular Section.
 
-When a student arrives in the morning:
+For example:
+
+```text
+Attendance Terminal
+        │
+        ▼
+AT-204
+        │
+        ▼
+Classroom 204
+```
+
+This matters because a classroom can be used by different Sections at different times of day.
+
+```text
+Room 204
+│
+├── Period 1 → Section 10A
+├── Period 2 → Section 11B
+└── Period 3 → Section 12A
+```
+
+The backend determines which Section is currently using the classroom from the effective timetable, so the terminal itself never needs reconfiguring as the day progresses.
+
+---
+
+# 11. Attendance Terminal Hardware
+
+The hardware architecture is:
+
+```text
+                    GM66
+                     │
+                  UART TTL
+                     │
+                     ▼
+                   ESP32
+                ┌────┼────┐
+                │    │    │
+                ▼    ▼    ▼
+             DS3231 SD Card Wi-Fi
+                │
+                │
+                ├───────────────┐
+                │               │
+                ▼               ▼
+             Timestamp       Backend
+                                │
+                                ▼
+                           Central System
+```
+
+The ESP32 controls the complete terminal.
+
+---
+
+# 12. Barcode and QR Scanning
+
+The GM66 scanner supports:
+
+- 1D barcodes
+- 2D QR codes
+
+The scanner reads the optical pattern and sends the decoded value to the ESP32 through UART TTL.
+
+```text
+Student / Teacher
+       │
+       ▼
+School ID Card
+       │
+       ▼
+Barcode / QR
+       │
+       ▼
+GM66 Scanner
+       │
+       ▼
+ESP32
+       │
+       ▼
+Attendance Event
+```
+
+The same terminal can therefore identify both students and teachers, using the same card and the same scanner.
+
+---
+
+# 13. Attendance Event
+
+A physical scan should first be treated as an **Attendance Scan Event**, independent of whatever the backend later decides it means.
+
+The event contains information such as:
+
+```text
+Event ID
+Terminal ID
+Barcode
+Scan Timestamp
+Sequence Number
+Sync Status
+```
+
+For example:
+
+```text
+Event ID:
+AT-204-0001842
+
+Terminal:
+AT-204
+
+Barcode:
+STU-00124
+
+Scan Time:
+10:18:23
+
+Sequence:
+1842
+```
+
+The backend then interprets this event and determines what the scan means.
+
+---
+
+# 14. Online Attendance Flow
+
+When the terminal has an active network connection:
+
+```text
+Student
+   │
+   ▼
+Scans ID Card
+   │
+   ▼
+GM66
+   │
+   ▼
+ESP32
+   │
+   ▼
+Create Scan Event
+   │
+   ▼
+Send to Backend
+   │
+   ▼
+Backend validates event
+   │
+   ▼
+Identify Student
+   │
+   ▼
+Identify Terminal
+   │
+   ▼
+Identify Classroom
+   │
+   ▼
+Determine Current Session
+   │
+   ▼
+Create Attendance Record
+```
+
+The terminal immediately receives the result.
+
+```text
+SUCCESS
+   │
+   ├── Green LED
+   └── Success beep
+```
+
+---
+
+# 15. Offline Attendance Flow
+
+The Attendance Terminal must continue working even when Wi-Fi or the backend is unavailable.
+
+```text
+Student
+   │
+   ▼
+Scan ID Card
+   │
+   ▼
+GM66
+   │
+   ▼
+ESP32
+   │
+   ▼
+DS3231 Timestamp
+   │
+   ▼
+Save Event to MicroSD
+   │
+   ▼
+Mark Event as Pending
+   │
+   ▼
+Audio + Visual Feedback
+```
+
+For example:
+
+```text
+Wi-Fi unavailable
+
+Student scans
+
+        ↓
+
+AT-204-0001842
+STU-00124
+10:18:23
+
+        ↓
+
+Saved locally ✓
+```
+
+The student does not have to wait for the server, and gets the same feedback as an online scan.
+
+---
+
+# 16. Offline Queue
+
+The MicroSD card acts as the local queue.
+
+```text
+MicroSD
+│
+├── AT-204-0001842
+├── AT-204-0001843
+├── AT-204-0001844
+├── AT-204-0001845
+└── AT-204-0001846
+```
+
+Each record remains locally stored until the backend confirms successful synchronization.
+
+This prevents attendance data from being lost because of temporary network failure.
+
+---
+
+# 17. Automatic Synchronization
+
+When the network connection is restored:
+
+```text
+Wi-Fi Restored
+      │
+      ▼
+Attendance Terminal
+      │
+      ▼
+Read Pending Events
+      │
+      ▼
+Send Events to Backend
+      │
+      ▼
+Backend Validates
+      │
+      ▼
+Backend Acknowledges
+      │
+      ▼
+Mark Events as Synced
+      │
+      ▼
+Remove / Archive Local Events
+```
+
+The terminal automatically performs this process without requiring manual intervention.
+
+---
+
+# 18. Reliable Synchronization
+
+Every scan should have a unique Event ID or sequence number, scoped to its terminal.
+
+For example:
+
+```text
+AT-204-0001842
+AT-204-0001843
+AT-204-0001844
+```
+
+This prevents duplicate attendance when a synchronization request is retried.
+
+For example:
+
+```text
+Terminal sends:
+
+AT-204-0001842
+
+        ↓
+
+Backend saves event
+
+        ↓
+
+Network response is lost
+
+        ↓
+
+Terminal sends again
+
+        ↓
+
+Backend sees:
+
+AT-204-0001842 already processed
+
+        ↓
+
+No duplicate record
+```
+
+---
+
+# 19. DS3231 RTC
+
+The DS3231 provides the terminal with an accurate local timestamp, independent of the network.
+
+This matters because attendance may be captured while the terminal has no network connection.
+
+```text
+                 Internet
+                    │
+                    ▼
+              Synchronize Time
+                    │
+                    ▼
+                  DS3231
+                    │
+                    ▼
+              Accurate Local Time
+                    │
+                    ▼
+                Scan Event
+```
+
+The system maintains two timestamps:
+
+```text
+Scanned At
+Received At
+```
+
+For example:
+
+```text
+Scanned At:
+10:18:23
+
+Received At:
+10:25:41
+```
+
+The **scanned time** represents when the student actually scanned.
+
+The backend receiving the event later should never make the student appear late merely because the network was unavailable at the time — lateness is always judged against Scanned At, not Received At.
+
+---
+
+# 20. Attendance Session
+
+The backend determines the attendance session associated with a scan.
+
+```text
+Attendance Terminal
+        │
+        ▼
+Classroom
+        │
+        ▼
+Current Date + Time
+        │
+        ▼
+Effective Timetable
+        │
+        ▼
+Current Section
+        │
+        ▼
+Current Period
+        │
+        ▼
+Attendance Session
+```
+
+The terminal does not need to make the final business decision.
+
+The backend remains the source of truth.
+
+---
+
+# 21. Student Attendance
+
+With this terminal architecture, the student flow is:
 
 ```text
 Student arrives
@@ -263,79 +705,77 @@ Student arrives
 Scans ID card
       │
       ▼
-System identifies student
+Attendance Terminal
       │
       ▼
-Checks today's attendance
+Scan Event
       │
-      ├── Already recorded
-      │       ↓
-      │   No duplicate
+      ▼
+Backend
       │
-      └── Not recorded
-              ↓
-        Mark student present
-              ↓
-        Store attendance time
+      ▼
+Identify Student
+      │
+      ▼
+Determine Classroom
+      │
+      ▼
+Determine Current Session
+      │
+      ▼
+Validate Student
+      │
+      ▼
+Mark Attendance
 ```
 
-A student therefore receives one attendance record for a school day.
-
-Example:
-
-```text
-Student: Sajag
-Date: August 15
-Status: Present
-First Scan: 8:21 AM
-```
-
-The system does not create:
-
-```text
-Period 1 Attendance
-Period 2 Attendance
-Period 3 Attendance
-```
-
-for the student.
+The system prevents duplicate attendance for the same attendance session.
 
 ---
 
-# 11. Teacher Classroom Presence
+# 22. Teacher Classroom Presence
 
-Teacher presence is different from student attendance.
-
-For teachers, the system records classroom activity for the particular period.
+Teacher presence is tracked separately from student attendance.
 
 ```text
 Teacher
    │
    ▼
-Enters classroom
+Enters Classroom
    │
    ▼
-Scans ID card
+Scans ID Card
    │
    ▼
-System identifies teacher
+Attendance Terminal
    │
    ▼
-Identifies Section
+Scan Event
    │
    ▼
-Identifies current period
+Backend
    │
    ▼
-Records classroom entry
+Identify Teacher
+   │
+   ▼
+Identify Classroom
+   │
+   ▼
+Identify Current Period
+   │
+   ▼
+Record Teacher Entry
 ```
 
-The system can therefore determine:
+The system can therefore record:
 
 ```text
 Teacher
 +
 Date
++
+Classroom
 +
 Section
 +
@@ -344,15 +784,50 @@ Period
 Entry Time
 ```
 
-This also allows the school to distinguish regular teachers from substitute teachers.
+---
+
+# 23. Teacher Exit
+
+The same terminal records teacher exit activity, using the same scan.
+
+Conceptually:
+
+```text
+Teacher scans
+      │
+      ▼
+Determine current presence state
+      │
+      ├── Not inside
+      │      ↓
+      │    ENTER
+      │
+      └── Already inside
+             ↓
+            EXIT
+```
+
+Therefore the system can maintain:
+
+```text
+10:12:31
+Mr. Sharma
+ENTER
+Room 204
+
+10:59:12
+Mr. Sharma
+EXIT
+Room 204
+```
+
+This creates a historical classroom-presence record without any extra action from the teacher.
 
 ---
 
-# 12. Global Timetable
+# 24. Global Timetable
 
-The school has a common timetable defining its normal periods.
-
-For example:
+The global timetable defines when normal periods occur.
 
 ```text
 Period 1
@@ -370,20 +845,18 @@ Period 4
 
 The global timetable defines **when periods normally occur**.
 
-It does not define which subject or teacher belongs to each Section.
+It does not determine which subject or teacher belongs to a particular Section.
 
 ---
 
-# 13. Section Timetable
+# 25. Section Timetable
 
 Each Section has its own timetable.
 
-Example:
-
 ```text
 Grade 10 - Section A
-
 Sunday
+
 │
 ├── Period 1 → Mathematics → Teacher A
 ├── Period 2 → Science → Teacher B
@@ -391,104 +864,49 @@ Sunday
 └── Period 4 → Computer → Teacher D
 ```
 
-The timetable represents the normal weekly schedule.
+The Section timetable represents the normal weekly schedule.
 
 ---
 
-# 14. Substitute Teacher Flow
+# 26. Classroom Assignment
 
-If a regular teacher is absent:
-
-```text
-Regular Timetable
-       │
-       ▼
-Teacher Absent
-       │
-       ▼
-Admin assigns substitute
-       │
-       ▼
-Effective timetable changes
-for that specific day
-       │
-       ▼
-Smart Board displays substitute
-```
-
-Example:
+The physical classroom is separate from the Section.
 
 ```text
-Normal:
-
-Period 2
-Science
-Mr. Sharma
-
-
-That Day:
-
-Period 2
-Science
-Ms. Gurung
-(Substitute)
+Section
+   │
+   ▼
+Timetable Entry
+   │
+   ▼
+Classroom
+   │
+   ├──────────────┐
+   ▼              ▼
+Smart Board   Attendance Terminal
 ```
 
-The regular timetable is not permanently modified.
+Both devices know which physical classroom they belong to, while the timetable determines which Section is using that classroom at a particular time.
 
 ---
 
-# 15. Special Period Timing
+# 27. Effective Timetable
 
-The system supports date-specific timing changes.
-
-For example:
+The system determines the actual schedule by combining:
 
 ```text
-Normal Period 7
-3:00 PM – 3:45 PM
-```
-
-A practical session may require:
-
-```text
-Friday
-Period 7
-2:45 PM – 4:00 PM
-```
-
-The change applies only to:
-
-```text
-Specific Date
-+
-Specific Section
-+
-Specific Period
-```
-
-Other Sections and other dates continue using the normal timetable.
-
----
-
-# 16. Effective Timetable
-
-The Smart Board does not simply read the normal timetable.
-
-It determines the **effective classroom schedule**.
-
-Conceptually:
-
-```text
+Section Timetable Entry
+  (section + day + period,
+   with its own timing already
+   embedded on the entry)
+      +
 Global Period
+  (fallback timing, used only
+   when the entry has no
+   embedded override)
       +
-Section Timetable
-      +
-Today's Date
-      +
-Time Override
-      +
-Substitute Assignment
+Substitution
+  (date-specific teacher change)
       ↓
 Effective Classroom Schedule
 ```
@@ -498,43 +916,198 @@ This determines:
 - Current period
 - Current subject
 - Effective teacher
-- Whether teacher is a substitute
+- Substitute teacher
 - Actual start time
 - Actual end time
 - Next period
 
+A substitution is layered on top of the Section Timetable at read time — it is date-specific, so it is never written into the weekly schedule itself. Period timing works differently: it lives directly on the Section Timetable entry (see §29), so no separate date-scoped layer is needed to resolve it.
+
 ---
 
-# 17. Smart Board Daily Operation
+# 28. Substitute Teacher Flow
 
-The Smart Board continuously monitors the current time.
+If the regular teacher is absent:
+
+```text
+Regular Timetable
+       │
+       ▼
+Teacher Absent
+       │
+       ▼
+Admin Assigns Substitute
+       │
+       ▼
+Effective Timetable Changes
+for Specific Day
+       │
+       ├───────────────┐
+       ▼               ▼
+Smart Board       Attendance
+displays           Terminal
+substitute        recognizes
+teacher            effective teacher
+```
+
+The normal timetable is not permanently modified.
+
+---
+
+# 29. Special Period Timing
+
+Some sections need a period to run on a different schedule than the rest of the school, on a recurring basis — not just for one date. A common example is a practical/lab period.
+
+```text
+Normal Period 4 (Global Timetable)
+12:10 – 12:50
+
+Section 12-D, Friday, Period 4 (Physics Practical)
+12:10 – 1:10
+```
+
+Rather than layering this on as a separate date-based override, the custom timing is **embedded directly on that section's timetable entry** for that day and period. Every other section's Period 4 on the Global Timetable is untouched — only Section 12-D's Friday-Period-4 entry carries its own `customStartTime`/`customEndTime`.
+
+```text
+Section Timetable Entry
+│
+├── section:   12-D
+├── dayOfWeek: friday
+├── period:    4
+├── subject:   Physics (Practical)
+├── customStartTime: 12:10
+└── customEndTime:   1:10
+```
+
+Because the lab period runs longer, the section's break afterward is naturally shorter that day — the next period (or the tiffin break) for that section simply starts once Period 4 actually ends, without needing a separate rule for the break itself.
+
+If the entry has no `customStartTime`/`customEndTime`, the section is assumed to follow the Global Timetable's normal period timing for that period.
+
+---
+
+# 30. Smart Board Daily Operation
+
+The Smart Board continuously monitors the classroom schedule.
+
+```text
+Current Time
+     │
+     ▼
+Determine Current Period
+     │
+     ▼
+Find Section Timetable Entry
+  (its timing is already
+   embedded on the entry)
+     │
+     ▼
+Check Substitution
+     │
+     ▼
+Display Effective Classroom Information
+```
+
+The Smart Board does not need to know anything about the physical scanner.
+
+It receives the processed classroom state from the backend.
+
+---
+
+# 31. Attendance Terminal vs Smart Board
+
+The responsibilities are intentionally separated.
+
+```text
+┌──────────────────────┬─────────────────────────┐
+│ SMART BOARD          │ ATTENDANCE TERMINAL     │
+├──────────────────────┼─────────────────────────┤
+│ Display date/time    │ Scan barcode/QR         │
+│ Display period       │ Timestamp scan           │
+│ Display subject      │ Store offline events     │
+│ Display teacher      │ Synchronize events       │
+│ Display attendance   │ Buzzer feedback          │
+│ Display notices      │ LED feedback             │
+│ Display timetable    │ Wi-Fi communication      │
+│ Display substitute   │                          │
+└──────────────────────┴─────────────────────────┘
+```
+
+This separation makes the system more reliable and easier to maintain: a fault in one device never disables the other.
+
+---
+
+# 32. Backend Communication
+
+The communication architecture:
+
+```text
+                   BACKEND
+                      │
+          ┌───────────┴───────────┐
+          │                       │
+          ▼                       ▼
+    Smart Board             Attendance Terminal
+          │                       │
+          │                       │
+    REST/WebSocket            REST/API
+          │                       │
+          ▼                       ▼
+      Display                Scan Events
+```
+
+The Attendance Terminal never needs to communicate directly with the Smart Board.
+
+The backend acts as the central source of truth.
+
+---
+
+# 33. Real-Time Attendance Update
+
+When a student scans successfully:
+
+```text
+Student
+   │
+   ▼
+Attendance Terminal
+   │
+   ▼
+Backend
+   │
+   ├── Save Attendance
+   │
+   └── Publish Update
+             │
+             ▼
+        Smart Board
+             │
+             ▼
+     Attendance count updates
+```
 
 For example:
 
 ```text
-10:30 AM
-    │
-    ▼
-Determine current period
-    │
-    ▼
-Find Section timetable
-    │
-    ▼
-Check substitution
-    │
-    ▼
-Check time override
-    │
-    ▼
-Display effective classroom information
-```
+Before:
 
-When the period ends, the Smart Board automatically moves to the next period.
+Present: 31
+
+Student scans
+
+        ↓
+
+Backend processes scan
+
+        ↓
+
+Smart Board:
+
+Present: 32
+```
 
 ---
 
-# 18. Notice System
+# 34. Notice System
 
 The Admin can send notices to:
 
@@ -542,70 +1115,74 @@ The Admin can send notices to:
 
 ```text
 Notice
-  ↓
+   ↓
 Every Section
-  ↓
+   ↓
 Every relevant Smart Board
+   ↓
+Students
 ```
 
 ### One Section
 
 ```text
 Notice
-  ↓
+   ↓
 Section 10-A
-  ↓
+   ↓
 10-A Smart Board
+   ↓
+Students of 10-A
 ```
 
 ### Multiple Selected Sections
 
 ```text
 Notice
-  ↓
+   ↓
 10-A
 10-B
 9-A
-  ↓
+   ↓
 Selected Smart Boards
+   +
+Selected Students
 ```
 
-The same targeting system is also used to determine which students and teachers can see the notice.
+The targeting system remains independent from the Attendance Terminal.
 
 ---
 
-# 19. Student Experience
-
-The student's overall experience is:
+# 35. Student Experience
 
 ```text
-Receive school credentials
+Receive School Credentials
           │
           ▼
-       Login
+        Login
           │
           ▼
-     Student Portal
+    Student Portal
           │
-    ┌─────┼─────┐
-    ▼     ▼     ▼
+     ┌────┼─────┐
+     ▼    ▼     ▼
 Attendance Timetable Notices
 ```
 
-The student can view their historical attendance throughout the academic year.
+The student can view historical attendance throughout the academic year.
 
 ---
 
-# 20. Teacher Experience
+# 36. Teacher Experience
 
 ```text
-Receive credentials
+Receive Credentials
         │
         ▼
       Login
         │
         ▼
-   Teacher Portal
+  Teacher Portal
         │
    ┌────┼─────────┐
    ▼    ▼         ▼
@@ -615,1476 +1192,208 @@ Timetable Sections Notices
 Classroom Presence
 ```
 
+Teacher classroom presence is generated primarily from the Attendance Terminal scans.
+
 ---
 
-# 21. Admin Experience
+# 37. Admin Experience
 
 ```text
-                 ADMIN
-                   │
-          ┌────────┼────────┐
-          ▼        ▼        ▼
-        Users    Classes  Subjects
-                   │
-                   ▼
-                Sections
-                   │
-             ┌─────┴─────┐
-             ▼           ▼
-        Smart Boards  Students
+                         ADMIN
+                           │
+          ┌────────────────┼─────────────────┐
+          ▼                ▼                 ▼
+        Users           Classes           Subjects
+                           │
+                           ▼
+                        Sections
+                           │
+             ┌─────────────┼─────────────┐
+             ▼             ▼             ▼
+        Classrooms     Smart Boards   Attendance
+                                      Terminals
              │
              ▼
-          Timetable
+         Timetable
              │
       ┌──────┼──────┐
       ▼      ▼      ▼
 Substitution Timing Notices
 ```
 
----
-
-# 22. Complete School-Day Flow
+The Admin can also monitor Attendance Terminal status in real time:
 
 ```text
-                 START OF DAY
-                       │
-                       ▼
-              Students arrive
-                       │
-                       ▼
-                Scan ID cards
-                       │
-                       ▼
-              Daily attendance
-                       │
-                       ▼
-                Classes begin
-                       │
-                       ▼
-              Teacher enters
-                       │
-                       ▼
-               Teacher scans
-                       │
-                       ▼
-          Classroom presence recorded
-                       │
-                       ▼
-              Smart Board shows
-              current period
-                       │
-                       ▼
-                 Period ends
-                       │
-                       ▼
-               Next period begins
-                       │
-                       ▼
-             Process continues
-                       │
-                       ▼
-                  School ends
-```
+AT-204
+Online ✓
 
-Notices and timetable changes can be reflected throughout the day.
+AT-205
+Offline ⚠
 
----
+AT-206
+Syncing...
 
-# 23. Technical System Architecture
-
-The user-facing explanation above represents the operational solution.
-
-Technically, Kakshyasathi is structured as a full-stack Next.js application.
-
-```text
-                    Kakshyasathi
-                         │
-        ┌────────────────┼────────────────┐
-        │                │                │
-        ▼                ▼                ▼
-     Web/PWA          Smart Board       API
-        │                │                │
-        └────────────────┼────────────────┘
-                         ▼
-                  Business Logic
-                         │
-                         ▼
-                     MongoDB
+AT-207
+Maintenance
 ```
 
 ---
 
-# 24. Technology Stack
+# 38. Complete Classroom Architecture
 
-## Frontend
-
-- Next.js
-- React
-- TypeScript
-- Tailwind CSS
-- shadcn/ui
-- React Hook Form
-- Zod
-- Zustand where client-side state is required
-
-## Backend
-
-- Next.js App Router
-- Next.js Route Handlers
-- NextAuth/Auth.js
-- TypeScript
-- Mongoose
-- MongoDB
-
-## PWA
-
-- Web App Manifest
-- Service Worker
-- Installable application
-- Offline/static asset caching where appropriate
-- Smart Board optimized experience
-
-## Authentication
-
-- Credentials-based authentication
-- JWT sessions
-- Role-based authorization
-
----
-
-# 25. Application Structure
-
-The application has separate areas for each role.
+The final physical classroom architecture is:
 
 ```text
-src/
-│
-├── app/
-│   │
-│   ├── (auth)/
-│   │   └── signin/
-│   │
-│   ├── admin/
-│   │
-│   ├── teacher/
-│   │
-│   ├── student/
-│   │
-│   ├── smartboard/
-│   │
-│   └── api/
-│
-├── components/
-│
-├── models/
-│
-├── services/
-│
-├── repositories/
-│
-├── lib/
-│
-├── schemas/
-│
-├── types/
-│
-├── hooks/
-│
-├── constants/
-│
-├── config/
-│
-└── scripts/
-```
-
----
-
-# 26. Role-Based Pages
-
-```text
-app/
-│
-├── admin/
-│   ├── dashboard/
-│   ├── users/
-│   ├── classes/
-│   ├── sections/
-│   ├── subjects/
-│   ├── smartboards/
-│   ├── timetable/
-│   ├── substitutions/
-│   ├── attendance/
-│   └── notices/
-│
-├── teacher/
-│   ├── dashboard/
-│   ├── timetable/
-│   ├── sections/
-│   ├── attendance/
-│   ├── presence/
-│   └── notices/
-│
-├── student/
-│   ├── dashboard/
-│   ├── attendance/
-│   ├── timetable/
-│   └── notices/
-│
-└── smartboard/
-    ├── dashboard/
-    ├── attendance/
-    ├── notices/
-    └── timetable/
-```
-
----
-
-# 27. Role-Based API Structure
-
-The API follows the same separation.
-
-```text
-app/api/
-│
-├── admin/
-│   ├── users/
-│   ├── classes/
-│   ├── sections/
-│   ├── subjects/
-│   ├── smartboards/
-│   ├── timetable/
-│   ├── substitutions/
-│   ├── attendance/
-│   └── notices/
-│
-├── teacher/
-│   ├── profile/
-│   ├── timetable/
-│   ├── sections/
-│   ├── presence/
-│   └── notices/
-│
-├── student/
-│   ├── profile/
-│   ├── attendance/
-│   ├── timetable/
-│   └── notices/
-│
-└── smartboard/
-    ├── auth/
-    ├── status/
-    ├── classroom/
-    ├── scan/
-    ├── attendance/
-    ├── timetable/
-    └── notices/
-```
-
-This keeps each role's API boundary clear.
-
----
-
-# 28. Complete Folder Structure
-
-```text
-src/
-│
-├── app/
-│   │
-│   ├── (auth)/
-│   │   └── signin/
-│   │       └── page.tsx
-│   │
-│   ├── admin/
-│   │   ├── dashboard/
-│   │   ├── users/
-│   │   ├── classes/
-│   │   ├── sections/
-│   │   ├── subjects/
-│   │   ├── smartboards/
-│   │   ├── timetable/
-│   │   ├── substitutions/
-│   │   ├── attendance/
-│   │   └── notices/
-│   │
-│   ├── teacher/
-│   │   ├── dashboard/
-│   │   ├── timetable/
-│   │   ├── sections/
-│   │   ├── presence/
-│   │   └── notices/
-│   │
-│   ├── student/
-│   │   ├── dashboard/
-│   │   ├── attendance/
-│   │   ├── timetable/
-│   │   └── notices/
-│   │
-│   ├── smartboard/
-│   │   ├── dashboard/
-│   │   └── setup/
-│   │
-│   ├── api/
-│   │   ├── admin/
-│   │   ├── teacher/
-│   │   ├── student/
-│   │   └── smartboard/
-│   │
-│   ├── favicon.ico
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx
-│
-├── components/
-│   ├── admin/
-│   ├── teacher/
-│   ├── student/
-│   ├── smartboard/
-│   ├── attendance/
-│   ├── timetable/
-│   ├── notices/
-│   ├── auth/
-│   ├── theme/
-│   └── ui/
-│
-├── models/
-│   ├── user.model.ts
-│   ├── class.model.ts
-│   ├── section.model.ts
-│   ├── subject.model.ts
-│   ├── smartboard.model.ts
-│   ├── period.model.ts
-│   ├── timetable.model.ts
-│   ├── substitution.model.ts
-│   ├── periodOverride.model.ts
-│   ├── studentAttendance.model.ts
-│   ├── teacherPresence.model.ts
-│   └── notice.model.ts
-│
-├── services/
-│   ├── auth.service.ts
-│   ├── attendance.service.ts
-│   ├── timetable.service.ts
-│   ├── substitution.service.ts
-│   ├── notice.service.ts
-│   └── smartboard.service.ts
-│
-├── repositories/
-│   ├── user.repository.ts
-│   ├── attendance.repository.ts
-│   ├── timetable.repository.ts
-│   ├── notice.repository.ts
-│   └── smartboard.repository.ts
-│
-├── schemas/
-│   ├── auth/
-│   ├── admin/
-│   ├── teacher/
-│   ├── student/
-│   └── smartboard/
-│
-├── lib/
-│   ├── auth.ts
-│   ├── connectDB.ts
-│   ├── permissions.ts
-│   ├── response.ts
-│   ├── errors.ts
-│   └── utils.ts
-│
-├── types/
-│   ├── auth.d.ts
-│   ├── attendance.ts
-│   ├── timetable.ts
-│   └── smartboard.ts
-│
-├── hooks/
-│
-├── constants/
-│
-├── config/
-│
-└── scripts/
-    └── create-admin.ts
-```
-
----
-
-# 29. Database Design
-
-MongoDB is used as the primary database.
-
-The core relationships are:
-
-```text
-User
- │
- ├──────────────┐
- ▼              ▼
-Student       Teacher
- │              │
- ▼              ▼
-Section       Timetable
- │              │
- ▼              ▼
-Smart Board ← Classroom
-```
-
----
-
-# 30. User Model
-
-The User model represents:
-
-- Student
-- Teacher
-- Admin
-
-Conceptually:
-
-```text
-User
-├── _id
-├── username
-├── fullName
-├── password
-├── profilePicture
-├── phone
-├── rollNumber
-├── classId / sectionId
-├── userRole
-├── createdAt
-└── updatedAt
-```
-
-The username is used as the barcode value where the school's ID card barcode represents that identifier.
-
-Roles:
-
-```text
-STUDENT
-TEACHER
-ADMIN
-```
-
----
-
-# 31. Class Model
-
-Represents an academic class.
-
-Example:
-
-```text
-Grade 10
-Grade 11
-Grade 12
-```
-
-Conceptually:
-
-```text
-Class
-├── _id
-├── name
-├── grade
-├── academicYear
-└── timestamps
-```
-
-A Class can have multiple Sections.
-
----
-
-# 32. Section Model
-
-A Section belongs to a Class.
-
-Example:
-
-```text
-Grade 10
-   │
-   ├── A
-   ├── B
-   └── C
-```
-
-Conceptually:
-
-```text
-Section
-├── _id
-├── classId
-├── name
-├── academicYear
-└── timestamps
-```
-
-Sections are the primary classroom unit of Kakshyasathi.
-
----
-
-# 33. Subject Model
-
-Subjects are maintained independently.
-
-Example:
-
-```text
-Mathematics
-Science
-English
-Computer Science
-Physics
-```
-
-Conceptually:
-
-```text
-Subject
-├── _id
-├── name
-├── code
-└── timestamps
-```
-
----
-
-# 34. Smart Board Model
-
-A Smart Board represents a physical classroom device.
-
-```text
-SmartBoard
-├── _id
-├── deviceId
-├── name
-├── sectionId
-├── credentials
-├── status
-├── lastSeenAt
-└── timestamps
-```
-
-The important relationship is:
-
-```text
-SmartBoard
-     │
-     ▼
-Section
-```
-
----
-
-# 35. Period Model
-
-Represents the school's global period structure.
-
-```text
-Period
-├── _id
-├── periodNumber
-├── startTime
-├── endTime
-└── timestamps
-```
-
-Example:
-
-```text
-Period 1 → 10:15 – 11:00
-Period 2 → 11:00 – 11:45
-```
-
----
-
-# 36. Timetable Model
-
-Represents the normal timetable for a Section.
-
-```text
-Timetable
-├── _id
-├── sectionId
-├── dayOfWeek
-├── periodId
-├── subjectId
-├── teacherId
-└── timestamps
-```
-
-Relationship:
-
-```text
-Section
-   │
-   ▼
-Timetable
-   ├── Subject
-   └── Teacher
-```
-
----
-
-# 37. Substitution Model
-
-Stores temporary teacher substitutions.
-
-```text
-Substitution
-├── _id
-├── sectionId
-├── date
-├── periodId
-├── regularTeacherId
-├── substituteTeacherId
-└── timestamps
-```
-
-This does not modify the permanent timetable.
-
----
-
-# 38. Period Override Model
-
-Stores date-specific timing changes.
-
-```text
-PeriodOverride
-├── _id
-├── sectionId
-├── date
-├── periodId
-├── startTime
-├── endTime
-└── timestamps
-```
-
-This allows special periods without modifying the global timetable.
-
----
-
-# 39. Student Attendance Model
-
-Attendance is daily.
-
-```text
-StudentAttendance
-├── _id
-├── studentId
-├── sectionId
-├── date
-├── status
-├── scannedAt
-└── timestamps
-```
-
-A unique constraint should prevent duplicate daily attendance.
-
-Conceptually:
-
-```text
-studentId + date
-```
-
-should identify one daily attendance record.
-
----
-
-# 40. Teacher Presence Model
-
-Teacher classroom presence is period-based.
-
-```text
-TeacherPresence
-├── _id
-├── teacherId
-├── sectionId
-├── date
-├── periodId
-├── enteredAt
-├── exitedAt
-└── timestamps
-```
-
-This is separate from student attendance.
-
----
-
-# 41. Notice Model
-
-```text
-Notice
-├── _id
-├── title
-├── content
-├── createdBy
-├── targetType
-├── targetSections
-├── priority
-├── expiresAt
-├── status
-└── timestamps
-```
-
-Targeting supports:
-
-```text
-ALL
-SELECTED_SECTIONS
-```
-
-A selected target can contain one or many Sections.
-
----
-
-# 42. Database Relationship Overview
-
-```text
-                    User
-                 /   |   \
-                /    |    \
-           Student Teacher Admin
-              │       │
-              │       │
-              ▼       ▼
-           Section  Timetable
-              │       │
-              │       ├── Subject
-              │       └── Teacher
-              │
-       ┌──────┼──────────────┐
-       ▼      ▼              ▼
- Attendance Smart Board    Notices
-              │
-              ▼
-           Section
-```
-
----
-
-# 43. Authentication
-
-Human authentication uses credentials provided by the school.
-
-```text
-Username
-+
-Password
-      │
-      ▼
-Authentication
-      │
-      ▼
-User Identity
-      │
-      ▼
-Role
-      │
-      ▼
-Authorized Portal
-```
-
-Possible destinations:
-
-```text
-ADMIN    → /admin
-TEACHER  → /teacher
-STUDENT  → /student
-```
-
-Smart Boards use separate device authentication.
-
----
-
-# 44. Authorization
-
-Authentication answers:
-
-> Who is this user?
-
-Authorization answers:
-
-> What is this user allowed to do?
-
-Examples:
-
-```text
-ADMIN
-✓ Manage users
-✓ Manage timetable
-✓ Manage sections
-✓ Manage notices
-✓ Manage Smart Boards
-
-TEACHER
-✓ View timetable
-✓ View assigned sections
-✓ Record classroom presence
-
-STUDENT
-✓ View attendance
-✓ View timetable
-✓ View notices
-
-SMART BOARD
-✓ View classroom information
-✓ Submit barcode scans
-✓ Receive targeted notices
-```
-
----
-
-# 45. API Architecture
-
-The API is separated by role.
-
-```text
-/api/admin/...
-/api/teacher/...
-/api/student/...
-/api/smartboard/...
-```
-
-This keeps role-specific operations clearly separated.
-
-Example:
-
-```text
-/api/admin/users
-/api/admin/timetable
-/api/admin/notices
-
-/api/teacher/timetable
-/api/teacher/presence
-
-/api/student/attendance
-/api/student/timetable
-
-/api/smartboard/scan
-/api/smartboard/classroom
-/api/smartboard/notices
-```
-
-Shared business logic should remain in services rather than duplicating logic inside route handlers.
-
----
-
-# 46. Application Layer Architecture
-
-The backend follows a separation of responsibilities:
-
-```text
-Route Handler
-     │
-     ▼
-Validation
-     │
-     ▼
-Authorization
-     │
-     ▼
-Service
-     │
-     ▼
-Repository
-     │
-     ▼
-Mongoose Model
-     │
-     ▼
-MongoDB
-```
-
-This keeps API routes small and makes the business logic reusable.
-
----
-
-# 47. Smart Board Data Flow
-
-```text
-Smart Board
-     │
-     ├── Request classroom information
-     │
-     └── Send barcode scan
-             │
-             ▼
-        Smart Board API
-             │
-             ▼
-       Authenticate Device
-             │
-             ▼
-       Identify Section
-             │
-             ▼
-       Process Request
-             │
-             ▼
-           MongoDB
-```
-
----
-
-# 48. Smart Board Classroom Information Flow
-
-```text
-Current Time
-     │
-     ▼
-Current Period
-     │
-     ▼
-Section Timetable
-     │
-     ├── Subject
-     └── Regular Teacher
-              │
-              ▼
-      Check Substitution
-              │
-              ▼
-      Check Time Override
-              │
-              ▼
-      Effective Schedule
-              │
-              ▼
-        Smart Board
-```
-
----
-
-# 49. Barcode Scan Processing
-
-When a barcode is scanned:
-
-```text
-Barcode
-   │
-   ▼
-Smart Board
-   │
-   ▼
-Smart Board Scan API
-   │
-   ▼
-Find User
-   │
-   ▼
-Identify Role
-   │
-   ├── Student
-   │      ↓
-   │  Daily Attendance
-   │
-   └── Teacher
-          ↓
-     Classroom Presence
-```
-
-The system validates that the scan is appropriate for the current context.
-
----
-
-# 50. Student Scan Rules
-
-For a student scan:
-
-1. Identify the student.
-2. Determine today's date.
-3. Determine the student's current Section.
-4. Check whether today's attendance already exists.
-5. If not, create the daily attendance record.
-6. If it already exists, do not create another record.
-
----
-
-# 51. Teacher Scan Rules
-
-For a teacher scan:
-
-1. Identify the teacher.
-2. Identify the Smart Board's Section.
-3. Determine the current period.
-4. Determine the effective teacher for that period.
-5. Check for a substitution.
-6. Record classroom presence.
-7. Prevent unintended duplicate entries.
-
----
-
-# 52. Timetable Resolution
-
-The system determines the effective timetable using:
- n
-Date
-+
-Current Time
-+
-Section
-+
-Global Period
-+
-Regular Timetable
-+
-Substitution
-+
-Period Override
-```
-
-The result is:
-
-```text
-Current Period
-Current Subject
-Current Teacher
-Current Start Time
-Current End Time
-Next Period
-```
-
----
-
-# 53. Attendance Integrity
-
-Attendance is an important school record, so duplicate and unauthorized changes should be prevented.
-
-Important protections include:
-
-- Unique daily student attendance
-- Role-based access
-- Server-side validation
-- Device authentication
-- Timestamp recording
-- Immutable or controlled attendance history
-- Audit logging for administrative changes
-
-The client should never be trusted to determine whether attendance is valid.
-
----
-
-# 54. Security
-
-The system should protect:
-
-- Student information
-- Teacher information
-- Attendance
-- Timetable
-- Notices
-- Smart Board credentials
-
-Security principles include:
-
-- Password hashing
-- Secure sessions
-- Server-side authorization
-- Input validation
-- Rate limiting where appropriate
-- Secure Smart Board authentication
-- Protected API routes
-- No sensitive credentials in client-side code
-- Environment variables for secrets
-
----
-
-# 55. PWA Architecture
-
-Kakshyasathi is designed as a Progressive Web App.
-
-The same application can therefore serve:
-
-```text
-Desktop
-   │
-Mobile
-   │
-Tablet
-   │
-Android Smart Board
-```
-
-The Smart Board receives a specialized classroom experience while students, teachers, and administrators use their respective application areas.
-
----
-
-# 56. PWA Installation
-
-The application provides installable PWA metadata including:
-
-- Application name
-- Application icon
-- Theme color
-- Background color
-- Display mode
-- Start URL
-- Appropriate Android icons
-
-The Smart Board can run Kakshyasathi as an installed application rather than as an ordinary browser tab.
-
----
-
-# 57. Offline Considerations
-
-The system should prioritize reliable operation in classrooms.
-
-Static application resources can be cached.
-
-However, attendance and other important records should not be considered successfully stored until the server confirms them.
-
-For critical operations:
-
-```text
-Scan
- ↓
-Send to Server
- ↓
-Server confirms
- ↓
-Display success
-```
-
-If connectivity fails, the system should clearly indicate the issue rather than falsely claiming that attendance was recorded.
-
----
-
-# 58. Error Handling
-
-The application should distinguish between:
-
-```text
-Invalid barcode
-Unknown user
-Unauthorized device
-Duplicate attendance
-Wrong classroom
-No active period
-Network failure
-Server failure
-Invalid timetable
-```
-
-For example:
-
-```text
-Unknown ID
-    ↓
-"Student/teacher not found"
-```
-
-rather than silently failing.
-
----
-
-# 59. Database Indexing
-
-Important indexes include:
-
-### User
-
-```text
-username
-userRole
-```
-
-### Section
-
-```text
-classId
-```
-
-### Smart Board
-
-```text
-deviceId
-sectionId
-```
-
-### Timetable
-
-```text
-sectionId
-dayOfWeek
-periodId
-```
-
-### Student Attendance
-
-```text
-studentId + date
-sectionId + date
-```
-
-### Teacher Presence
-
-```text
-teacherId + date + sectionId + periodId
-```
-
-### Substitution
-
-```text
-sectionId + date + periodId
-```
-
-### Period Override
-
-```text
-sectionId + date + periodId
-```
-
-These indexes improve lookup performance and help enforce uniqueness where required.
-
----
-
-# 60. Application Lifecycle
-
-The complete lifecycle of the system is:
-
-```text
-                    SCHOOL SETUP
-                         │
-                         ▼
-                  Academic Year
-                         │
-                         ▼
-                     Classes
-                         │
-                         ▼
-                    Sections
-                         │
-                         ▼
-              Students + Teachers
-                         │
-                         ▼
-                     Subjects
-                         │
-                         ▼
-                   Smart Boards
-                         │
-                         ▼
-                    Timetable
-                         │
-                         ▼
-                   SCHOOL DAY
-                         │
-          ┌──────────────┼──────────────┐
-          ▼              ▼              ▼
-       Student         Teacher       Smart Board
-       Scans           Scans          Displays
-          │              │              │
-          ▼              ▼              ▼
-      Attendance      Presence       Classroom
-                                      Information
-                         │
-                         ▼
-                    ADMIN UPDATES
-                         │
-              ┌──────────┼──────────┐
-              ▼          ▼          ▼
-         Substitutes  Overrides   Notices
-              │          │          │
-              └──────────┼──────────┘
-                         ▼
-                   Updated Classroom
-                         │
-                         ▼
-                    School Ends
-```
-
----
-
-# 61. Example End-to-End Scenario
-
-Consider:
-
-```text
-Grade 10
-Section A
-Smart Board: SB-001
-```
-
-The regular timetable says:
-
-```text
-Period 2
-Science
-Mr. Sharma
-10:15 – 11:00
-```
-
-On Monday, students arrive and scan their ID cards.
-
-Their daily attendance is recorded.
-
-At 10:15, the Smart Board displays:
-
-```text
-Period 2
-Science
-Mr. Sharma
-10:15 – 11:00
-```
-
-Mr. Sharma enters and scans his ID card.
-
-His classroom presence is recorded.
-
-Suppose Mr. Sharma is absent on Tuesday.
-
-The Admin assigns Ms. Gurung as substitute.
-
-On Tuesday, the Smart Board automatically displays:
-
-```text
-Period 2
-Science
-Ms. Gurung
-Substitute
-```
-
-Suppose the Admin also changes the period timing because of a practical:
-
-```text
-10:00 – 11:15
-```
-
-The Smart Board uses that timing for that specific Section and date.
-
-The Admin then sends a notice to:
-
-```text
-Grade 10-A
-Grade 10-B
-Grade 9-A
-```
-
-Only those Sections receive the notice.
-
-This demonstrates how the different parts of Kakshyasathi work together.
-
----
-
-# 62. Key Design Principles
-
-Kakshyasathi follows several important principles.
-
-### Simple for Users
-
-Students and teachers should only need to scan their existing ID cards.
-
-### Centralized Management
-
-The Admin manages school configuration from one place.
-
-### Section-Centric Classroom Management
-
-The Section is the core classroom unit.
-
-### Temporary Changes
-
-Substitutions and special timings do not unnecessarily modify the permanent timetable.
-
-### Daily Student Attendance
-
-Students receive one attendance record per day.
-
-### Period-Based Teacher Presence
-
-Teacher classroom presence is associated with individual periods.
-
-### Device-Aware Classrooms
-
-Each Smart Board is permanently associated with a Section.
-
-### Targeted Communication
-
-Notices can reach all Sections, one Section, or multiple selected Sections.
-
-### Role Separation
-
-Each user sees and controls only what their role permits.
-
-### School-Owned Accounts
-
-Accounts are created and managed by the school.
-
----
-
-# 63. Final System Architecture
-
-```text
-                         KAKSHYASATHI
-                              │
-              ┌───────────────┼────────────────┐
-              │               │                │
-              ▼               ▼                ▼
-           ADMIN           TEACHER          STUDENT
-              │               │                │
-              └───────────────┼────────────────┘
-                              │
-                         Next.js PWA
-                              │
-              ┌───────────────┼────────────────┐
-              │               │                │
-              ▼               ▼                ▼
-         Admin API        Teacher API      Student API
-                              │
-                              │
-                        Smart Board API
+                         CLASSROOM
+                             │
+              ┌──────────────┴──────────────┐
+              │                             │
+              ▼                             ▼
+        ┌─────────────┐             ┌─────────────────┐
+        │ SMART BOARD │             │   ATTENDANCE    │
+        │             │             │    TERMINAL     │
+        │ Display     │             │                 │
+        │ Schedule    │             │ ESP32           │
+        │ Period      │             │ GM66            │
+        │ Teacher     │             │ DS3231          │
+        │ Notices     │             │ MicroSD         │
+        │ Attendance  │             │ Buzzer + LEDs   │
+        └──────┬──────┘             └────────┬────────┘
+               │                             │
+               │                             │
+               └──────────────┬──────────────┘
                               │
                               ▼
-                    Smart Board Devices
-                              │
-                              ▼
-                       Barcode Reader
-                              │
-                              ▼
-                         School ID Card
-                              │
-                              ▼
-                           Services
-                              │
-                              ▼
-                         Repositories
-                              │
-                              ▼
-                       Mongoose Models
-                              │
-                              ▼
-                           MongoDB
+                           BACKEND
 ```
 
 ---
 
-# 64. Overall Concept
-
-Kakshyasathi can ultimately be summarized as:
+# 39. Complete School-Day Flow
 
 ```text
-                 ONE SCHOOL
-                     │
-                     ▼
-             ONE CENTRAL SYSTEM
-                     │
-        ┌────────────┼────────────┐
-        ▼            ▼            ▼
-     PEOPLE       CLASSROOMS    ACADEMICS
-        │            │            │
-        ▼            ▼            ▼
- Students       Smart Boards   Timetable
- Teachers       Barcode        Subjects
- Admin          Attendance     Substitutions
-                Notices        Time Changes
+                    START OF DAY
+                          │
+                          ▼
+                  Students arrive
+                          │
+                          ▼
+                  Scan ID Cards
+                          │
+                          ▼
+                Attendance Terminal
+                          │
+                 ┌────────┴────────┐
+                 │                 │
+              Online            Offline
+                 │                 │
+                 ▼                 ▼
+              Backend           MicroSD
+                 │                 │
+                 │            Network returns
+                 │                 │
+                 │                 ▼
+                 │              Backend
+                 │                 │
+                 └────────┬────────┘
+                          ▼
+                 Attendance Processed
+                          │
+                          ▼
+                    Classes Begin
+                          │
+                          ▼
+                  Teacher Enters
+                          │
+                          ▼
+                 Teacher Scans ID
+                          │
+                          ▼
+                 Teacher Presence
+                          │
+                          ▼
+                  Period Continues
+                          │
+             ┌────────────┴────────────┐
+             │                         │
+             ▼                         ▼
+        Smart Board              Attendance Terminal
+        displays class           records scans
+             │                         │
+             └────────────┬────────────┘
+                          ▼
+                       Backend
+                          │
+             ┌────────────┼────────────┐
+             ▼            ▼            ▼
+         Attendance    Presence      Notices
+             │            │            │
+             ▼            ▼            ▼
+        Smart Board   Admin Panel   Students
+                          │
+                          ▼
+                    Next Period
+                          │
+                          ▼
+                 Repeat Throughout Day
 ```
 
-The goal is not simply to digitize attendance.
+---
 
-The goal of **Kakshyasathi** is to make the classroom itself connected to the school's information system:
+# 40. Final System Architecture
 
-> **The student scans in, the teacher scans in, the Smart Board knows the classroom, the timetable knows what should be happening, the Admin can make changes centrally, and everyone receives the information relevant to them.**
+```text
+                           KAKSHYASATHI
+                                │
+        ┌───────────────────────┼────────────────────────┐
+        │                       │                        │
+        ▼                       ▼                        ▼
+     ADMIN                  BACKEND                 USERS
+        │                       │               ┌──────┼──────┐
+        │                       │               ▼      ▼      ▼
+        │                       │            Student Teacher Admin
+        │                       │
+        │          ┌────────────┼────────────┐
+        │          │            │            │
+        ▼          ▼            ▼            ▼
+   Management  Timetable   Attendance     Notices
+                    │            │
+                    │            ▼
+                    │      Scan Events
+                    │            │
+                    │            ▼
+                    │     Attendance Terminal
+                    │            │
+                    │      ┌─────┼─────┐
+                    │      ▼     ▼     ▼
+                    │    GM66  RTC    SD
+                    │      │
+                    │     ESP32
+                    │
+                    ▼
+               Classroom
+                    │
+              ┌─────┴─────┐
+              ▼           ▼
+         Smart Board  Attendance
+                      Terminal
+              │           │
+              │           │
+              └─────┬─────┘
+                    │
+                    ▼
+                 BACKEND
+                    │
+          ┌─────────┼──────────┐
+          ▼         ▼          ▼
+      Smart Board  Admin    Student
+       Display     Panel     Portal
+```
 
-This creates a single, connected workflow for **attendance, classroom presence, timetable management, substitutions, notices, and classroom information** while keeping the system practical for the school's existing Android Smart Boards and ID cards.
+---
+
+## Core Architectural Principle
+
+> **The Smart Board represents the classroom's visual state, while the Attendance Terminal represents the classroom's physical attendance input. Both are independently connected to the backend and are associated with the same physical classroom.**
+
+The backend remains the **central source of truth** for timetable, attendance sessions, teacher presence, substitutions, notices, and classroom state.

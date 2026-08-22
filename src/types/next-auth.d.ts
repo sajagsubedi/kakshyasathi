@@ -6,13 +6,13 @@ declare module "next-auth" {
     _id: string;
     username: string;
     fullName: string;
+
     profilePicture: {
       url: string;
       fileId: string;
     } | null;
-    userRole: UserRole | "SMARTBOARD";
-    sectionId?: string | null;
-    deviceId?: string | null;
+
+    userRole: UserRole;
   }
 
   interface Session {
@@ -20,13 +20,13 @@ declare module "next-auth" {
       _id: string;
       username: string;
       fullName: string;
+
       profilePicture: {
         url: string;
         fileId: string;
       } | null;
-      userRole: UserRole | "SMARTBOARD";
-      sectionId?: string | null;
-      deviceId?: string | null;
+
+      userRole: UserRole;
     } & DefaultSession["user"];
   }
 }
@@ -36,12 +36,12 @@ declare module "next-auth/jwt" {
     _id: string;
     username: string;
     fullName: string;
+
     profilePicture: {
       url: string;
       fileId: string;
     } | null;
-    userRole: UserRole | "SMARTBOARD";
-    sectionId?: string | null;
-    deviceId?: string | null;
+
+    userRole: UserRole;
   }
 }

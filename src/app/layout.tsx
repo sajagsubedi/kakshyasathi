@@ -5,7 +5,6 @@ import "./globals.css";
 
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { InstallAppButton } from "@/components/pwa/InstallAppButton";
-import { AppProviders } from "@/providers/AppProviders";
 import { cn } from "@/lib/utils";
 import { ThemeToastContainer } from "@/components/theme/ThemeToastContainer";
 
@@ -126,11 +125,10 @@ export default function RootLayout({
         "
       >
         <ThemeProvider>
-          <AppProviders>
-            <ThemeToastContainer />
-            {children}
-            <InstallAppButton />
-          </AppProviders>
+          <ThemeToastContainer />
+          {children}
+
+          <InstallAppButton />
         </ThemeProvider>
       </body>
     </html>
