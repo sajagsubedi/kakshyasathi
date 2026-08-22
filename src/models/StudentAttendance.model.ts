@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import type { AttendanceRecordDoc } from "@/types";
+import { AttendanceStatus, type AttendanceRecordDoc } from "@/types";
 
 const studentAttendanceSchema = new Schema<AttendanceRecordDoc>(
   {
@@ -17,8 +17,8 @@ const studentAttendanceSchema = new Schema<AttendanceRecordDoc>(
     markedAt: { type: Date, required: true },
     status: {
       type: String,
-      enum: ["present", "late"],
-      default: "present",
+      enum: Object.values(AttendanceStatus),
+      default: AttendanceStatus.present,
     },
   },
   { timestamps: true },

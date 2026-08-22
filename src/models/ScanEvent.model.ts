@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import type { ScanEventDoc } from "@/types";
+import { PersonType, ScanEventStatus, type ScanEventDoc } from "@/types";
 
 const scanEventSchema = new Schema<ScanEventDoc>(
   {
@@ -9,15 +9,15 @@ const scanEventSchema = new Schema<ScanEventDoc>(
       required: true,
     },
     cardCode: { type: String, required: true, trim: true },
-    scannedAt: { type: Date, required: true }, // DS3231 clock
-    receivedAt: { type: Date, required: true }, // Backend clock
+    scannedAt: { type: Date, required: true },
+    receivedAt: { type: Date, required: true },
     sequenceNumber: { type: Number, required: true },
-    personType: { type: String, enum: ["Student", "Teacher"] },
+    personType: { type: String, enum: Object.values(PersonType) },
     person: { type: Schema.Types.ObjectId, refPath: "personType" },
     status: {
       type: String,
-      enum: ["processed", "duplicate", "invalid"],
-      default: "processed",
+      enum: Object.values(ScanEventStatus),
+      default: ScanEventStatus.processed,
     },
   },
   { timestamps: true },

@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import type { NoticeDoc } from "@/types";
+import { NoticeTargetType, type NoticeDoc } from "@/types";
 
 const noticeSchema = new Schema<NoticeDoc>(
   {
@@ -8,7 +8,7 @@ const noticeSchema = new Schema<NoticeDoc>(
     author: { type: Schema.Types.ObjectId, ref: "User", required: true },
     targetType: {
       type: String,
-      enum: ["all", "sections"],
+      enum: Object.values(NoticeTargetType),
       required: true,
     },
     targetSections: [{ type: Schema.Types.ObjectId, ref: "Section" }],

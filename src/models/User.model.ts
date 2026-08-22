@@ -1,12 +1,12 @@
 import mongoose, { Schema } from "mongoose";
-import type { UserDoc } from "@/types";
+import { PersonGender, UserRole, type UserDoc } from "@/types";
 import bcrypt from "bcryptjs";
 
 const userSchema = new Schema<UserDoc>(
   {
     role: {
       type: String,
-      enum: ["admin", "teacher", "student"],
+      enum: Object.values(UserRole),
       required: true,
     },
     name: { type: String, required: true, trim: true },
@@ -27,7 +27,7 @@ const userSchema = new Schema<UserDoc>(
     password: { type: String, required: true },
     gender: {
       type: String,
-      enum: ["Male", "Female", "Other"],
+      enum: Object.values(PersonGender),
       required: true,
     },
   },
@@ -36,10 +36,10 @@ const userSchema = new Schema<UserDoc>(
 
 userSchema.index({ role: 1, username: 1 });
 
-// userSchema.pre("save", async function () {
-//   if (!this.isModified("password")) return;
-//   this.password = bcrypt.hash(this.password, 10);
-// });
+userSchema.pre("save", async function () {
+  if (!this.isModified("password")) return;
+  this.password = await bcrypt.hash(this.password, 10);
+});
 
 userSchema.methods.isPasswordCorrect = async function (
   password: string,

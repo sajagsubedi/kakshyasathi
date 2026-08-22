@@ -3,7 +3,8 @@ import Credentials from "next-auth/providers/credentials";
 import { ZodError } from "zod";
 
 import { signInSchema } from "@/schemas/signInSchema";
-import UserModel, { UserRole } from "@/models/user.model";
+import UserModel from "@/models/User.model";
+import { PersonGender, UserRole } from "@/types";
 import connectDb from "./connectDB";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
@@ -48,14 +49,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
 
           return {
             _id: existingUser._id.toString(),
-
+            name: existingUser.name,
             username: existingUser.username,
-
-            fullName: existingUser.fullName,
-
-            profilePicture: existingUser.profilePicture ?? null,
-
-            userRole: existingUser.userRole,
+            email: existingUser.email,
+            gender: existingUser.gender,
+            role: existingUser.role,
           };
         } catch (error) {
           if (error instanceof ZodError) {
@@ -74,10 +72,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token._id = user._id;
+        token.name = user.name;
         token.username = user.username;
-        token.fullName = user.fullName;
-        token.profilePicture = user.profilePicture ?? null;
-        token.userRole = user.userRole;
+        token.email = user.email;
+        token.gender = user.gender;
+        token.role = user.role;
       }
 
       return token;
@@ -86,13 +85,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async session({ session, token }) {
       if (session.user) {
         session.user._id = token._id as string;
+        session.user.name = token.name as string;
         session.user.username = token.username as string;
-        session.user.fullName = token.fullName as string;
-        session.user.profilePicture = (token.profilePicture ?? null) as {
-          url: string;
-          fileId: string;
-        } | null;
-        session.user.userRole = token.userRole as UserRole;
+        session.user.email = token.email as string;
+        session.user.gender = token.gender as PersonGender;
+        session.user.role = token.role as UserRole;
       }
       return session;
     },

@@ -1,32 +1,24 @@
-import { UserRole } from "@/models/user.model";
 import { DefaultSession } from "next-auth";
+import { PersonGender, UserRole } from "@/types";
 
 declare module "next-auth" {
   interface User {
     _id: string;
+    name: string;
     username: string;
-    fullName: string;
-
-    profilePicture: {
-      url: string;
-      fileId: string;
-    } | null;
-
-    userRole: UserRole;
+    email: string;
+    gender: PersonGender;
+    role: UserRole;
   }
 
   interface Session {
     user: {
       _id: string;
+      name: string;
       username: string;
-      fullName: string;
-
-      profilePicture: {
-        url: string;
-        fileId: string;
-      } | null;
-
-      userRole: UserRole;
+      email: string;
+      gender: PersonGender;
+      role: UserRole;
     } & DefaultSession["user"];
   }
 }
@@ -34,14 +26,10 @@ declare module "next-auth" {
 declare module "next-auth/jwt" {
   interface JWT {
     _id: string;
+    name: string;
     username: string;
-    fullName: string;
-
-    profilePicture: {
-      url: string;
-      fileId: string;
-    } | null;
-
-    userRole: UserRole;
+    email: string;
+    gender: PersonGender;
+    role: UserRole;
   }
 }

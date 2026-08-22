@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import type { SmartBoardDoc } from "@/types";
+import { DeviceStatus, type SmartBoardDoc } from "@/types";
 
 const smartBoardSchema = new Schema<SmartBoardDoc>(
   {
@@ -11,8 +11,8 @@ const smartBoardSchema = new Schema<SmartBoardDoc>(
     deviceKey: { type: String, required: true, unique: true, trim: true },
     status: {
       type: String,
-      enum: ["online", "offline", "syncing", "maintenance"],
-      default: "offline",
+      enum: Object.values(DeviceStatus),
+      default: DeviceStatus.offline,
     },
     lastSeenAt: { type: Date },
   },

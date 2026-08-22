@@ -2,27 +2,55 @@ import { Document, Types } from "mongoose";
 
 // // ---------- Enums / literal unions ----------
 
-export type UserRole = "admin" | "teacher" | "student";
+export enum UserRole {
+  admin = "admin",
+  teacher = "teacher",
+  student = "student",
+}
 
-export type DeviceStatus = "online" | "offline" | "syncing" | "maintenance";
+export enum DeviceStatus {
+  online = "online",
+  offline = "offline",
+  syncing = "syncing",
+  maintenance = "maintenance",
+}
 
-export type PersonType = "Student" | "Teacher";
-export type PersonGender = "Male" | "Female" | "Other";
+export enum PersonType {
+  student = "Student",
+  teacher = "Teacher",
+}
 
-export type ScanEventStatus = "processed" | "duplicate" | "invalid";
+export enum PersonGender {
+  male = "Male",
+  female = "Female",
+  other = "Other",
+}
 
-export type AttendanceStatus = "present" | "late";
+export enum ScanEventStatus {
+  processed = "processed",
+  duplicate = "duplicate",
+  invalid = "invalid",
+}
 
-export type NoticeTargetType = "all" | "sections";
+export enum AttendanceStatus {
+  present = "present",
+  late = "late",
+}
 
-export type DayOfWeek =
-  | "sunday"
-  | "monday"
-  | "tuesday"
-  | "wednesday"
-  | "thursday"
-  | "friday"
-  | "saturday";
+export enum NoticeTargetType {
+  all = "all",
+  sections = "sections",
+}
+
+export enum DayOfWeek {
+  sunday = "sunday",
+  monday = "monday",
+  tuesday = "tuesday",
+  wednesday = "wednesday",
+  thursday = "thursday",
+  friday = "friday",
+  saturday = "saturday",
+}
 
 // // ---------- User & Auth ----------
 
@@ -35,6 +63,7 @@ export interface UserDoc extends Document {
   password: string;
   createdAt: Date;
   updatedAt: Date;
+  isPasswordCorrect: (password: string) => Promise<boolean>;
 }
 
 export interface StudentDoc extends Document {

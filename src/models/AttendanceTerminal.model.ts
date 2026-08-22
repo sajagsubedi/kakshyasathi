@@ -1,5 +1,5 @@
 import mongoose, { Schema } from "mongoose";
-import type { AttendanceTerminalDoc } from "@/types";
+import { DeviceStatus, type AttendanceTerminalDoc } from "@/types";
 
 const attendanceTerminalSchema = new Schema<AttendanceTerminalDoc>(
   {
@@ -12,8 +12,8 @@ const attendanceTerminalSchema = new Schema<AttendanceTerminalDoc>(
     deviceKey: { type: String, required: true, unique: true, trim: true },
     status: {
       type: String,
-      enum: ["online", "offline", "syncing", "maintenance"],
-      default: "offline",
+      enum: Object.values(DeviceStatus),
+      default: DeviceStatus.offline,
     },
     lastSeenAt: { type: Date },
     lastSyncedSequence: { type: Number, default: 0 },
