@@ -3,7 +3,7 @@ import { roleDashboardPath } from "@/lib/routes";
 import { UserRole } from "@/types";
 import { NextResponse } from "next/server";
 
-const publicPaths = ["/signin", "/api/auth"];
+const publicPaths = ["/signin", "/api/auth","/api/attendanceterminal"];
 
 const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
