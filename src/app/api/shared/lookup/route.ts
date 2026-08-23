@@ -6,7 +6,6 @@ import SectionModel from "@/models/Section.model";
 import SubjectModel from "@/models/Subject.model";
 import TeacherModel from "@/models/Teacher.model";
 import PeriodModel from "@/models/Period.model";
-import UserModel from "@/models/User.model";
 import StudentModel from "@/models/Student.model";
 import { UserRole } from "@/types";
 
@@ -26,14 +25,17 @@ export const GET = withHandler(async () => {
   ]);
 
   const sectionMap = new Map(
-    sections.map((s) => [
-      String(s._id),
-      {
-        _id: String(s._id),
-        name: s.name,
-        class: s.class as { _id: string; name: string; grade?: number },
-      },
-    ]),
+    sections.map((s) => {
+      const cls = s.class as unknown as { _id?: unknown; name?: string; grade?: number } | undefined;
+      return [
+        String(s._id),
+        {
+          _id: String(s._id),
+          name: s.name,
+          class: cls ? { _id: String(cls._id || ""), name: cls.name ?? "", grade: cls.grade } : undefined,
+        },
+      ];
+    }),
   );
 
   const subjectMap = new Map(
@@ -51,10 +53,16 @@ export const GET = withHandler(async () => {
     .populate("user", "name username")
     .lean();
   const teacherMap = new Map(
-    teachers.map((t) => [
-      String(t._id),
-      { _id: String(t._id), user: t.user as { _id: string; name: string; username: string } },
-    ]),
+    teachers.map((t) => {
+      const u = t.user as unknown as { _id?: unknown; name?: string; username?: string } | undefined;
+      return [
+        String(t._id),
+        {
+          _id: String(t._id),
+          user: u ? { _id: String(u._id || ""), name: u.name ?? "", username: u.username ?? "" } : undefined,
+        },
+      ];
+    }),
   );
 
   const getSectionName = (id: string) => {
@@ -75,20 +83,26 @@ export const GET = withHandler(async () => {
   }> = [];
 
   if (role === UserRole.teacher) {
-    const teacher = teachers.find((t) => String(t.user?._id ?? "") === userId);
+    const teacher = teachers.find((t) => {
+      const u = t.user as unknown as { _id?: unknown } | undefined;
+      return String(u?._id ?? "") === userId;
+    });
     const assignedSectionIds = (teacher?.assignedSections ?? []).map(String);
     const studentsInSections = await StudentModel.find({
       section: { $in: assignedSectionIds },
     })
       .populate("user", "name username")
       .lean();
-    users = studentsInSections.map((s) => ({
-      id: String((s.user as { _id: string })._id),
-      fullName: (s.user as { name: string }).name,
-      username: (s.user as { username: string }).username,
-      role: "student",
-      sectionId: String(s.section),
-    }));
+    users = studentsInSections.map((s) => {
+      const u = s.user as unknown as { _id?: unknown; name?: string; username?: string } | undefined;
+      return {
+        id: String(u?._id || s._id),
+        fullName: u?.name ?? "Student",
+        username: u?.username ?? "",
+        role: "student",
+        sectionId: String(s.section),
+      };
+    });
   }
 
   return ApiResponse(

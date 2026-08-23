@@ -23,12 +23,24 @@ export const GET = withHandler(async () => {
     .lean();
 
   return ApiResponse(
-    attendance.map((a) => ({
-      id: String(a._id),
-      date: (a.attendanceSession as { date: Date }).date,
-      status: a.status.toUpperCase(),
-      scannedAt: a.markedAt,
-    })),
+    attendance.map((a) => {
+      const sessionObj = a.attendanceSession as unknown as {
+        date?: Date;
+        periodNumber?: number;
+      } | undefined;
+
+      const recordDate = sessionObj?.date
+        ? new Date(sessionObj.date).toISOString().split("T")[0]
+        : new Date(a.markedAt).toISOString().split("T")[0];
+
+      return {
+        id: String(a._id),
+        date: recordDate,
+        status: String(a.status || "").toUpperCase(),
+        periodNumber: sessionObj?.periodNumber,
+        scannedAt: a.markedAt ? new Date(a.markedAt).toISOString() : undefined,
+      };
+    }),
     "Student attendance fetched successfully",
   );
 });

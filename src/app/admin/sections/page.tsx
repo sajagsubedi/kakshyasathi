@@ -535,7 +535,7 @@ export default function AdminSectionsPage() {
               </Label>
 
               <Select
-                value={form.classId || undefined}
+                value={form.classId || null}
                 onValueChange={(value) =>
                   setForm((prev) => ({
                     ...prev,

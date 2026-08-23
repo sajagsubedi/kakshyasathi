@@ -22,6 +22,8 @@ export interface StudentProfile {
   sectionId: string;
   sectionName?: string;
   className?: string;
+  grade?: number;
+  academicYear?: string;
   rollNumber?: string;
   symbolNumber?: string;
   enrollmentYear?: string;
@@ -32,6 +34,8 @@ export interface AttendanceRecord {
   id: string;
   date: string;
   status: string;
+  periodNumber?: number;
+  sectionName?: string;
   scannedAt?: string;
 }
 
@@ -39,11 +43,22 @@ export interface TimetableEntryDto {
   id: string;
   dayOfWeek: number;
   periodNumber: number;
+  periodId?: string;
   subjectId: string;
+  subjectName?: string;
+  subjectCode?: string;
   teacherId: string;
+  teacherName?: string;
   sectionId?: string;
+  sectionName?: string;
+  className?: string;
+  classroomId?: string;
+  roomNumber?: string;
+  startTime?: string;
+  endTime?: string;
   customStartTime?: string;
   customEndTime?: string;
+  isCustomTiming?: boolean;
 }
 
 export interface NoticeDto {
@@ -61,6 +76,7 @@ export interface TeacherSectionDto {
   name: string;
   academicYear: string;
   className?: string;
+  grade?: number;
   studentCount?: number;
 }
 
@@ -68,7 +84,10 @@ export interface PresenceRecord {
   id: string;
   date: string;
   sectionId: string;
+  sectionName?: string;
   periodNumber: number;
+  periodId?: string;
+  roomNumber?: string;
   enteredAt: string;
   exitedAt?: string;
 }
@@ -154,7 +173,7 @@ export function useStudentDashboard() {
         profile: StudentProfile | null;
         attendance: AttendanceRecord[];
         timetable: TimetableEntryDto[];
-        todaySchedule: Array<{ id: string; periodNumber: number; subjectId: string; teacherId: string }>;
+        todaySchedule: TimetableEntryDto[];
         notices: NoticeDto[];
       }>(axios.get("/api/student/dashboard"), "Failed to load dashboard.");
     },
@@ -193,7 +212,7 @@ export function useTeacherPresence() {
     queryFn: async () => {
       return adminRequest<PresenceRecord[]>(
         axios.get("/api/teacher/presence"),
-        "Failed to load presence.",
+        "Failed to load presence records.",
       );
     },
   });
@@ -218,7 +237,7 @@ export function useTeacherDashboard() {
       return adminRequest<{
         sections: TeacherSectionDto[];
         timetable: TimetableEntryDto[];
-        todaySchedule: Array<{ id: string; sectionId: string; periodNumber: number; subjectId: string }>;
+        todaySchedule: TimetableEntryDto[];
         presence: PresenceRecord[];
         notices: NoticeDto[];
       }>(axios.get("/api/teacher/dashboard"), "Failed to load dashboard.");
@@ -226,7 +245,7 @@ export function useTeacherDashboard() {
   });
 }
 
-// ---------- Shared lookup ----------
+// ---------- Shared lookup hook ----------
 
 export function useSharedLookup() {
   return useQuery({
@@ -240,68 +259,14 @@ export function useSharedLookup() {
   });
 }
 
-// ---------- Admin lookup + class detail ----------
+export {
+  useAdminClassById,
+  useAdminClassDetail,
+  type AdminClassDetail,
+} from "./admin/useClasses";
 
-export function useAdminLookup() {
-  return useQuery({
-    queryKey: ["admin", "lookup"],
-    queryFn: async () => {
-      return adminRequest<LookupData>(
-        axios.get("/api/admin/lookup"),
-        "Failed to load lookup data.",
-      );
-    },
-  });
-}
-
-export interface AdminClassDetail {
-  class: { _id: string; name: string; grade: number; academicYear: string };
-  sections: Array<{ id: string; name: string; academicYear: string; studentCount: number }>;
-  students: Array<{
-    id: string;
-    fullName: string;
-    username: string;
-    email: string;
-    phone: string;
-    sectionId: string;
-    rollNumber: string;
-  }>;
-  attendance: {
-    today: { present: number; absent: number; late: number };
-    overall: { rate: number };
-    recent: Array<{
-      id: string;
-      date: string;
-      status: string;
-      studentId: string;
-      scannedAt: string;
-      sectionId: string;
-    }>;
-  };
-  timetable: Array<{
-    id: string;
-    dayOfWeek: number;
-    periodNumber: number;
-    sectionId: string;
-    subjectId: string;
-    subjectName: string;
-    teacherId: string;
-    teacherName: string;
-    startTime: string;
-    endTime: string;
-  }>;
-  teacherCount: number;
-}
-
-export function useAdminClassById(id?: string) {
-  return useQuery({
-    queryKey: ["admin", "class", id],
-    enabled: Boolean(id),
-    queryFn: async () => {
-      return adminRequest<AdminClassDetail>(
-        axios.get(`/api/admin/classes/${id}/details`),
-        "Failed to load class details.",
-      );
-    },
-  });
-}
+export {
+  useAdminSectionById,
+  useAdminSectionDetail,
+  type AdminSectionDetail,
+} from "./admin/useSections";

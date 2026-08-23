@@ -135,7 +135,7 @@ export default function AdminPeriodsPage() {
 
       <div className="mb-4">
         <Select
-          value={academicYearFilter || undefined}
+          value={academicYearFilter || null}
           onValueChange={(v) => setAcademicYearFilter(v ?? "")}
         >
           <SelectTrigger className="w-full sm:w-80">

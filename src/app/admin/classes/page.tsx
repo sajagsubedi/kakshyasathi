@@ -594,7 +594,7 @@ export default function AdminClassesPage() {
               </Label>
 
               <Select
-                value={form.academicYear || undefined}
+                value={form.academicYear || null}
                 onValueChange={(value) =>
                   setForm((prev) => ({
                     ...prev,

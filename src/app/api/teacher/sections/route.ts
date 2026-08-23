@@ -17,7 +17,10 @@ export const GET = withHandler(async () => {
 
   const assignedSections = (teacher.assignedSections ?? []).map(String);
   const sections = await SectionModel.find({ _id: { $in: assignedSections } })
-    .populate("class", "name grade academicYear")
+    .populate({
+      path: "class",
+      populate: { path: "academicYear", select: "label isActive" },
+    })
     .lean();
 
   const sectionIds = sections.map((s) => s._id);
@@ -28,13 +31,28 @@ export const GET = withHandler(async () => {
   const countMap = new Map(studentCounts.map((c) => [String(c._id), c.count]));
 
   return ApiResponse(
-    sections.map((s) => ({
-      id: String(s._id),
-      name: s.name,
-      academicYear: (s.class as { academicYear?: string })?.academicYear ?? "",
-      className: (s.class as { name?: string })?.name ?? "",
-      studentCount: countMap.get(String(s._id)) ?? 0,
-    })),
+    sections.map((s) => {
+      const cls = s.class as unknown as {
+        _id?: unknown;
+        name?: string;
+        grade?: number;
+        academicYear?: { label?: string } | string;
+      } | undefined;
+
+      const academicYearLabel =
+        typeof cls?.academicYear === "object" && cls?.academicYear !== null
+          ? cls.academicYear.label ?? ""
+          : String(cls?.academicYear ?? "");
+
+      return {
+        id: String(s._id),
+        name: s.name,
+        className: cls?.name ?? "",
+        grade: cls?.grade,
+        academicYear: academicYearLabel,
+        studentCount: countMap.get(String(s._id)) ?? 0,
+      };
+    }),
     "Teacher sections fetched successfully",
   );
 });

@@ -15,26 +15,46 @@ export const GET = withHandler(async () => {
     return ApiResponse([], "Teacher profile not found");
   }
 
-  const presence = await TeacherPresenceModel.find({ teacher: teacher._id })
-    .populate("classroom", "roomNumber")
-    .sort({ entryTime: -1 })
-    .limit(50)
-    .lean();
+  const [presence, timetable] = await Promise.all([
+    TeacherPresenceModel.find({ teacher: teacher._id })
+      .populate("classroom", "roomNumber")
+      .sort({ entryTime: -1 })
+      .limit(50)
+      .lean(),
+    TimetableModel.find({ teacher: teacher._id })
+      .populate({
+        path: "section",
+        populate: { path: "class", select: "name" },
+      })
+      .lean(),
+  ]);
 
-  const timetable = await TimetableModel.find({ teacher: teacher._id }).lean();
-  const sectionByPeriod = new Map(
-    timetable.map((t) => [t.periodNumber, String(t.section)]),
-  );
+  const sectionByPeriod = new Map<number, { id: string; label: string }>();
+  timetable.forEach((t) => {
+    const secObj = t.section as unknown as { _id?: unknown; name?: string; class?: { name?: string } } | undefined;
+    const label = secObj?.class?.name ? `${secObj.class.name} - ${secObj.name}` : `Section ${secObj?.name || '—'}`;
+    sectionByPeriod.set(t.periodNumber, {
+      id: String(secObj?._id || t.section),
+      label,
+    });
+  });
 
   return ApiResponse(
-    presence.map((p) => ({
-      id: String(p._id),
-      date: p.date,
-      sectionId: sectionByPeriod.get(p.periodNumber) ?? "",
-      periodNumber: p.periodNumber,
-      enteredAt: p.entryTime,
-      exitedAt: p.exitTime,
-    })),
+    presence.map((p) => {
+      const roomObj = p.classroom as unknown as { roomNumber?: string } | undefined;
+      const secInfo = sectionByPeriod.get(p.periodNumber);
+
+      return {
+        id: String(p._id),
+        date: p.date ? new Date(p.date).toISOString().split("T")[0] : "",
+        sectionId: secInfo?.id ?? "",
+        sectionName: secInfo?.label,
+        periodNumber: p.periodNumber,
+        roomNumber: roomObj?.roomNumber ?? "",
+        enteredAt: p.entryTime ? new Date(p.entryTime).toISOString() : "",
+        exitedAt: p.exitTime ? new Date(p.exitTime).toISOString() : undefined,
+      };
+    }),
     "Teacher presence fetched successfully",
   );
 });

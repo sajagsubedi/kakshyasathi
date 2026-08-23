@@ -34,7 +34,7 @@ export const GET = withHandler(async () => {
       targetType: n.targetType,
       targetSections: (n.targetSections ?? []).map(String),
       priority: "MEDIUM",
-      createdAt: n.publishedAt,
+      createdAt: n.publishedAt ? new Date(n.publishedAt).toISOString() : new Date().toISOString(),
     })),
     "Teacher notices fetched successfully",
   );
