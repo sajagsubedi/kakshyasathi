@@ -14,6 +14,7 @@ import {
   Home,
   LucideCalendarDays,
   DoorOpen,
+  Clock,
   ScanLine,
 } from "lucide-react";
 
@@ -51,6 +52,11 @@ export const adminNav = [
   {
     label: "Subjects",
     href: "/admin/subjects",
+    isBottomNav: false,
+  },
+  {
+    label: "Periods",
+    href: "/admin/periods",
     isBottomNav: false,
   },
   {
@@ -118,6 +124,10 @@ export const adminNavIcons = [
   {
     label: "Subjects",
     icon: BookOpen,
+  },
+  {
+    label: "Periods",
+    icon: Clock,
   },
   {
     label: "Classrooms",

@@ -73,16 +73,12 @@ export interface StudentDoc extends Document {
   guardianContact?: string;
   symbolNumber: string;
   enrollmentYear: string;
-  cardCode: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface TeacherDoc extends Document {
   user: Types.ObjectId; // ref User
-  subjects: Types.ObjectId[]; // ref Subject
-  assignedSections: Types.ObjectId[]; // ref Section
-  cardCode: string;
   createdAt: Date;
   updatedAt: Date;
 }

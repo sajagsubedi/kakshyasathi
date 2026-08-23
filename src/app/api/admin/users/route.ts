@@ -7,7 +7,6 @@ import UserModel from "@/models/User.model";
 import StudentModel from "@/models/Student.model";
 import TeacherModel from "@/models/Teacher.model";
 import SectionModel from "@/models/Section.model";
-import SubjectModel from "@/models/Subject.model";
 import { getPagination } from "@/lib/api/pagination";
 import { parseObjectId } from "@/lib/api/parseId";
 import { PersonGender, UserRole } from "@/types";
@@ -88,13 +87,7 @@ export const GET = withHandler(async (req: NextRequest) => {
         populate: { path: "class", select: "name grade" },
       })
       .lean(),
-    TeacherModel.find({ user: { $in: ids } })
-      .populate("subjects", "name code")
-      .populate({
-        path: "assignedSections",
-        populate: { path: "class", select: "name grade" },
-      })
-      .lean(),
+    TeacherModel.find({ user: { $in: ids } }).lean(),
   ]);
 
   return ApiResponse(
@@ -126,8 +119,6 @@ export const POST = withHandler(async (req: NextRequest) => {
     symbolNumber,
     enrollmentYear,
     guardianContact,
-    subjects,
-    assignedSections,
   } = body;
 
   if (!role || !Object.values(UserRole).includes(role)) {
@@ -175,25 +166,8 @@ export const POST = withHandler(async (req: NextRequest) => {
     }
 
     if (role === UserRole.teacher) {
-      const subjectIds: string[] = Array.isArray(subjects) ? subjects : [];
-      const sectionIds: string[] = Array.isArray(assignedSections)
-        ? assignedSections
-        : [];
-
-      for (const id of subjectIds) parseObjectId(id, "subject");
-      for (const id of sectionIds) parseObjectId(id, "section");
-
-      if (subjectIds.length) {
-        const count = await SubjectModel.countDocuments({
-          _id: { $in: subjectIds },
-        });
-        if (count !== subjectIds.length) throw new Error("Invalid subject");
-      }
-
       await TeacherModel.create({
         user: user._id,
-        subjects: subjectIds,
-        assignedSections: sectionIds,
       });
     }
   } catch (error) {

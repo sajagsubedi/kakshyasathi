@@ -9,13 +9,11 @@ const studentSchema = new Schema<StudentDoc>(
     symbolNumber: { type: String, required: true, unique: true, trim: true },
     enrollmentYear: { type: String, required: true },
     guardianContact: { type: String, trim: true },
-    cardCode: { type: String, required: true, unique: true, trim: true },
   },
   { timestamps: true },
 );
 
 studentSchema.index({ section: 1 });
-studentSchema.index({ cardCode: 1 });
 
 const StudentModel =
   (mongoose.models.Student as mongoose.Model<StudentDoc>) ||

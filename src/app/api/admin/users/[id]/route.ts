@@ -26,13 +26,7 @@ async function loadUserBundle(id: string) {
         populate: { path: "class", select: "name grade" },
       })
       .lean(),
-    TeacherModel.findOne({ user: id })
-      .populate("subjects", "name code")
-      .populate({
-        path: "assignedSections",
-        populate: { path: "class", select: "name grade" },
-      })
-      .lean(),
+    TeacherModel.findOne({ user: id }).lean(),
   ]);
 
   return { ...user, student, teacher };
@@ -122,25 +116,6 @@ export const PATCH = withHandler(
           student.guardianContact = body.guardianContact.trim() || undefined;
         }
         await student.save();
-      }
-    }
-
-    if (user.role === UserRole.teacher) {
-      const teacher = await TeacherModel.findOne({ user: id });
-      if (teacher) {
-        if (body.subjects !== undefined) {
-          if (!Array.isArray(body.subjects)) {
-            throw new Error("Subjects must be an array");
-          }
-          teacher.subjects = body.subjects;
-        }
-        if (body.assignedSections !== undefined) {
-          if (!Array.isArray(body.assignedSections)) {
-            throw new Error("Assigned sections must be an array");
-          }
-          teacher.assignedSections = body.assignedSections;
-        }
-        await teacher.save();
       }
     }
 
