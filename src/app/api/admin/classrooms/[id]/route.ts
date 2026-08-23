@@ -20,7 +20,10 @@ export const GET = withHandler(
     parseObjectId(id);
 
     const doc = await ClassroomModel.findById(id)
-      .populate("section", "name")
+      .populate({
+        path: "section",
+        populate: { path: "class", select: "name grade" },
+      })
       .lean();
     if (!doc) throw new Error("Classroom not found");
     return ApiResponse(doc, "Classroom fetched successfully");
@@ -50,11 +53,19 @@ export const PATCH = withHandler(
       doc.roomNumber = roomNumber;
     }
     if (body.section !== undefined) {
-      doc.section = body.section || undefined;
+      if (!body.section) throw new Error("Section cannot be empty");
+      parseObjectId(body.section, "section");
+      doc.section = body.section;
     }
 
     await doc.save();
-    return ApiResponse(doc, "Classroom updated successfully");
+    const populated = await ClassroomModel.findById(id)
+      .populate({
+        path: "section",
+        populate: { path: "class", select: "name grade" },
+      })
+      .lean();
+    return ApiResponse(populated, "Classroom updated successfully");
   },
 );
 

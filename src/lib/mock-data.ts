@@ -1,16 +1,101 @@
-import type {
-  Class,
-  Notice,
-  Period,
-  Section,
-  SmartBoard,
-  StudentAttendance,
-  Subject,
-  Substitution,
-  TeacherPresence,
-  TimetableEntry,
-  User,
-} from '@/types';
+interface User {
+  id: string;
+  username: string;
+  fullName: string;
+  role: string;
+  phone?: string;
+  createdAt: string;
+  profilePicture?: string;
+  rollNumber?: string;
+  classId?: string;
+  sectionId?: string;
+}
+
+interface Class {
+  id: string;
+  name: string;
+  grade: number;
+  academicYear: string;
+}
+
+interface Section {
+  id: string;
+  classId: string;
+  name: string;
+  academicYear: string;
+}
+
+interface Subject {
+  id: string;
+  name: string;
+  code: string;
+}
+
+interface Period {
+  id: string;
+  periodNumber: number;
+  startTime: string;
+  endTime: string;
+}
+
+interface SmartBoard {
+  id: string;
+  deviceId: string;
+  name: string;
+  sectionId: string;
+  status: string;
+  lastSeenAt: string;
+}
+
+interface TimetableEntry {
+  id: string;
+  sectionId: string;
+  dayOfWeek: number;
+  periodId: string;
+  subjectId: string;
+  teacherId: string;
+}
+
+interface Substitution {
+  id: string;
+  sectionId: string;
+  date: string;
+  periodId: string;
+  regularTeacherId: string;
+  substituteTeacherId: string;
+}
+
+interface StudentAttendance {
+  id: string;
+  studentId: string;
+  sectionId: string;
+  date: string;
+  status: string;
+  scannedAt: string;
+}
+
+interface TeacherPresence {
+  id: string;
+  teacherId: string;
+  sectionId: string;
+  date: string;
+  periodId: string;
+  enteredAt: string;
+  exitedAt?: string;
+}
+
+interface Notice {
+  id: string;
+  title: string;
+  content: string;
+  createdBy: string;
+  targetType: string;
+  targetSections: string[];
+  priority: string;
+  status: string;
+  createdAt: string;
+  expiresAt?: string;
+}
 
 export const currentUser: User = {
   id: 'u-admin-001',

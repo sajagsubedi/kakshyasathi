@@ -7,10 +7,12 @@ export interface ClassItem {
   _id: string;
   name: string;
   grade: number;
-  academicYear: {
-    _id: string;
-    label: string;
-  };
+  academicYear:
+    | string
+    | {
+        _id: string;
+        label: string;
+      };
   createdAt?: string;
   updatedAt?: string;
 }

@@ -178,7 +178,10 @@ export default function AdminClassesPage() {
     setForm({
       name: classItem.name,
       grade: String(classItem.grade),
-      academicYear: classItem.academicYear,
+      academicYear:
+        typeof classItem.academicYear === "string"
+          ? classItem.academicYear
+          : classItem.academicYear._id,
     });
 
     setDialogOpen(true);
@@ -591,11 +594,11 @@ export default function AdminClassesPage() {
               </Label>
 
               <Select
-                value={form.academicYear}
+                value={form.academicYear || undefined}
                 onValueChange={(value) =>
                   setForm((prev) => ({
                     ...prev,
-                    academicYear: value,
+                    academicYear: value ?? "",
                   }))
                 }
                 disabled={isLoadingAcademicYears}
@@ -743,7 +746,9 @@ function ClassCard({
 
             <CardDescription>
               Grade {classItem.grade} · AY{" "}
-              {classItem.academicYear.label}
+              {typeof classItem.academicYear === "string"
+                ? classItem.academicYear
+                : classItem.academicYear.label}
             </CardDescription>
           </div>
         </button>

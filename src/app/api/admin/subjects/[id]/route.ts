@@ -4,6 +4,7 @@ import { requireAdmin } from "@/lib/ValidatePermission";
 import { ApiResponse } from "@/lib/api/ApiResponse";
 import connectDb from "@/lib/connectDB";
 import SubjectModel from "@/models/Subject.model";
+import TimetableModel from "@/models/Timetable.model";
 import { parseObjectId } from "@/lib/api/parseId";
 
 interface RouteContext {
@@ -61,7 +62,13 @@ export const DELETE = withHandler(
     const { id } = await context.params;
     parseObjectId(id);
 
-    // Optional: check if used in timetable before deleting
+    const used = await TimetableModel.countDocuments({ subject: id });
+    if (used > 0) {
+      throw new Error(
+        "Cannot delete subject that is used in a timetable. Remove those entries first.",
+      );
+    }
+
     const deleted = await SubjectModel.findByIdAndDelete(id);
     if (!deleted) throw new Error("Subject not found");
     return ApiResponse(null, "Subject deleted successfully");

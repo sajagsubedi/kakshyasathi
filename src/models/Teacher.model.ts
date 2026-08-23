@@ -6,6 +6,7 @@ const teacherSchema = new Schema<TeacherDoc>(
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
     subjects: [{ type: Schema.Types.ObjectId, ref: "Subject" }],
     assignedSections: [{ type: Schema.Types.ObjectId, ref: "Section" }],
+    cardCode: { type: String, required: true, unique: true, trim: true },
   },
   { timestamps: true },
 );

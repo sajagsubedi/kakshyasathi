@@ -3,12 +3,15 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { adminNavIcons } from '@/lib/navigation';
 
 export interface NavItem {
   label: string;
   href: string;
+  icon?: LucideIcon;
 }
 
 interface SidebarProps {
@@ -21,10 +24,13 @@ export function Sidebar({ navlinks, title, subtitle }: SidebarProps) {
   const pathname = usePathname();
 
   const items = navlinks.map((elem) => {
-    const cr = adminNavIcons.filter((el2) => el2.label == elem.label);
+    if (elem.icon) {
+      return { ...elem, icon: elem.icon };
+    }
+    const cr = adminNavIcons.find((el2) => el2.label === elem.label);
     return {
       ...elem,
-      icon: cr[0].icon,
+      icon: cr?.icon,
     };
   });
   return (
@@ -49,7 +55,7 @@ export function Sidebar({ navlinks, title, subtitle }: SidebarProps) {
       {/* NAV */}
       <nav className="flex-1 space-y-1 overflow-y-auto p-3">
         {items.map((item) => {
-          const Icon = item.icon;
+          const Icon: LucideIcon = item.icon ?? Circle;
           const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
           return (
             <Link

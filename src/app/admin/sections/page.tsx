@@ -414,7 +414,9 @@ export default function AdminSectionsPage() {
                   classInfo?.grade;
 
                 const academicYear =
-                  classInfo?.academicYear;
+                  typeof classInfo?.academicYear === "string"
+                    ? { _id: classInfo.academicYear, label: classInfo.academicYear }
+                    : classInfo?.academicYear;
 
 
                 return (
@@ -530,11 +532,11 @@ export default function AdminSectionsPage() {
               </Label>
 
               <Select
-                value={form.classId}
+                value={form.classId || undefined}
                 onValueChange={(value) =>
                   setForm((prev) => ({
                     ...prev,
-                    classId: value,
+                    classId: value ?? "",
                   }))
                 }
                 disabled={isLoadingClasses || Boolean(editingSection)}

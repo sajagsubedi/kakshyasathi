@@ -1,20 +1,24 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 import {
-  Calendar,
+  ClipboardCheck,
   Download,
   CheckCircle2,
   XCircle,
   Clock,
-} from 'lucide-react';
-
-import { PageHeader } from '@/components/shared/PageHeader';
-import { StatCard } from '@/components/shared/StatCard';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+} from "lucide-react";
+import { PageHeader } from "@/components/shared/PageHeader";
+import { StatCard } from "@/components/shared/StatCard";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
   Table,
   TableBody,
@@ -22,62 +26,116 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from '@/components/ui/table';
+} from "@/components/ui/table";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import {
-  studentAttendance,
-  users,
-  sections,
-  getSectionName,
-} from '@/lib/mock-data';
+} from "@/components/ui/select";
+import { useAdminAttendance } from "@/hooks/admin/useAttendance";
+import { useAdminSections } from "@/hooks/admin/useSections";
+import { sectionLabel, refId } from "@/lib/adminDisplay";
+
+type AttendanceRecord = {
+  _id: string;
+  status?: string;
+  markedAt?: string;
+  scannedAt?: string;
+  student?: {
+    user?: {
+      name?: string;
+      username?: string;
+    };
+  };
+  attendanceSession?: {
+    section?:
+      | string
+      | {
+          _id: string;
+          name?: string;
+          class?: { _id: string; name?: string };
+        };
+  };
+};
+
+function getInitials(name: string) {
+  return name
+    .split(" ")
+    .map((part) => part[0])
+    .filter(Boolean)
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+function getSectionLabel(
+  record: AttendanceRecord,
+  sectionsCache: Array<{ _id: string; name?: string; class?: unknown }>
+) {
+  const section = record.attendanceSession?.section;
+  if (!section) return "Unknown Section";
+  if (typeof section === "string") {
+    const resolved = sectionsCache.find((s) => s._id === refId(section));
+    if (resolved) return sectionLabel(resolved);
+    return "Unknown Section";
+  }
+  return sectionLabel(section);
+}
 
 export default function AdminAttendancePage() {
-  const [sectionFilter, setSectionFilter] = React.useState('ALL');
+  const [sectionFilter, setSectionFilter] = React.useState("ALL");
+  const today = new Date().toISOString().split("T")[0];
 
-  const filtered =
-    sectionFilter === 'ALL'
-      ? studentAttendance
-      : studentAttendance.filter((a) => a.sectionId === sectionFilter);
+  const { data: sectionsData } = useAdminSections({
+    page: 1,
+    limit: 100,
+  });
 
-  const present = filtered.filter((a) => a.status === 'PRESENT').length;
-  const absent = filtered.filter((a) => a.status === 'ABSENT').length;
-  const late = filtered.filter((a) => a.status === 'LATE').length;
+  const { data: attendanceData } = useAdminAttendance({
+    date: today,
+    section: sectionFilter === "ALL" ? undefined : sectionFilter,
+    view: "students",
+    page: 1,
+    limit: 100,
+  });
+
+  const sections = sectionsData?.items ?? [];
+  const attendance = (attendanceData?.items ?? []) as AttendanceRecord[];
+
+  const present = attendance.filter((r) => r.status === "present").length;
+  const absent = attendance.filter((r) => r.status === "absent").length;
+  const late = attendance.filter((r) => r.status === "late").length;
 
   const statusBadge = (status: string) => {
-    if (status === 'PRESENT')
+    if (status === "present")
       return (
-        <Badge className="bg-emerald-500 text-white hover:bg-emerald-500">
+        <Badge className="bg-emerald-500 text-white">
           <CheckCircle2 className="mr-1 h-3 w-3" />
           Present
         </Badge>
       );
-    if (status === 'ABSENT')
+    if (status === "late")
       return (
-        <Badge variant="destructive">
-          <XCircle className="mr-1 h-3 w-3" />
-          Absent
+        <Badge className="bg-amber-500 text-white">
+          <Clock className="mr-1 h-3 w-3" />
+          Late
         </Badge>
       );
     return (
-      <Badge className="bg-amber-500 text-white hover:bg-amber-500">
-        <Clock className="mr-1 h-3 w-3" />
-        Late
+      <Badge variant="destructive">
+        <XCircle className="mr-1 h-3 w-3" />
+        Absent
       </Badge>
     );
   };
 
   return (
-    <section
-    >
+    <section>
       <PageHeader
         title="Attendance Records"
-        description="Daily attendance for all sections"
+        description="Daily student attendance across sections"
         action={
           <Button variant="outline">
             <Download className="mr-2 h-4 w-4" />
@@ -85,9 +143,7 @@ export default function AdminAttendancePage() {
           </Button>
         }
       />
-
-      {/* STATS */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
           label="Present"
           value={present}
@@ -95,93 +151,100 @@ export default function AdminAttendancePage() {
           accent="success"
         />
         <StatCard
-          label="Late"
-          value={late}
-          icon={Clock}
-          accent="warning"
-        />
-        <StatCard
           label="Absent"
           value={absent}
           icon={XCircle}
           accent="destructive"
         />
+        <StatCard label="Late" value={late} icon={Clock} accent="warning" />
+        <StatCard
+          label="Total"
+          value={attendance.length}
+          icon={ClipboardCheck}
+          accent="primary"
+        />
       </div>
-
-      {/* FILTER */}
-      <div className="mt-4 flex items-center gap-3">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <span className="text-sm font-medium">August 15, 2026</span>
-        <div className="ml-auto">
-          <Select value={sectionFilter} onValueChange={setSectionFilter}>
-            <SelectTrigger className="w-48">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="ALL">All Sections</SelectItem>
-              {sections.map((sec) => (
-                <SelectItem key={sec.id} value={sec.id}>
-                  {getSectionName(sec.id)}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      {/* TABLE */}
-      <Card className="mt-4">
+      <Select
+        value={sectionFilter}
+        onValueChange={(value) => setSectionFilter(value || "ALL")}
+      >
+        <SelectTrigger className="mb-4 w-full sm:w-56">
+          <SelectValue placeholder="Filter section" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="ALL">All Sections</SelectItem>
+          {sections.map((s) => (
+            <SelectItem key={s._id} value={s._id}>
+              {sectionLabel(s)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <Card>
         <CardHeader>
-          <CardTitle className="text-base">Student Attendance</CardTitle>
-          <CardDescription>{filtered.length} records for today</CardDescription>
+          <CardTitle className="text-base">Today&apos;s Records</CardTitle>
         </CardHeader>
-        <CardContent className="p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Student</TableHead>
-                <TableHead>Roll No.</TableHead>
-                <TableHead>Section</TableHead>
-                <TableHead>Scan Time</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filtered.map((record) => {
-                const student = users.find((u) => u.id === record.studentId);
-                if (!student) return null;
-                return (
-                  <TableRow key={record.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <Avatar className="h-8 w-8">
-                          <AvatarFallback className="bg-primary/10 text-xs text-primary">
-                            {student.fullName.split(' ').map((n) => n[0]).slice(0, 2).join('')}
-                          </AvatarFallback>
-                        </Avatar>
-                        <span className="text-sm font-medium">{student.fullName}</span>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Student</TableHead>
+              <TableHead>Section</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Scanned At</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {attendance.map((record) => {
+              const studentName =
+                record.student?.user?.name?.trim() || "Unknown Student";
+              return (
+                <TableRow key={record._id}>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-7 w-7">
+                        <AvatarFallback className="text-xs bg-muted">
+                          {getInitials(studentName)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <span className="text-sm font-medium">
+                          {studentName}
+                        </span>
+                        {record.student?.user?.username && (
+                          <p className="text-[10px] text-muted-foreground">
+                            @{record.student.user.username}
+                          </p>
+                        )}
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {student.rollNumber}
-                    </TableCell>
-                    <TableCell className="text-sm">{getSectionName(record.sectionId)}</TableCell>
-                    <TableCell className="text-sm text-muted-foreground">
-                      {record.scannedAt
-                        ? new Date(record.scannedAt).toLocaleTimeString('en-US', {
-                          hour: 'numeric',
-                          minute: '2-digit',
-                          hour12: true,
-                        })
-                        : '—'}
-                    </TableCell>
-                    <TableCell>{statusBadge(record.status)}</TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-sm">
+                    {getSectionLabel(record, sections)}
+                  </TableCell>
+                  <TableCell>{statusBadge(record.status || "absent")}</TableCell>
+                  <TableCell className="text-sm text-muted-foreground">
+                    {record.markedAt || record.scannedAt
+                      ? new Date(
+                          record.markedAt ?? record.scannedAt!
+                        ).toLocaleTimeString()
+                      : "—"}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+
+            {attendance.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={4}
+                  className="py-8 text-center text-sm text-muted-foreground"
+                >
+                  No attendance records found for today.
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
       </Card>
     </section>
   );

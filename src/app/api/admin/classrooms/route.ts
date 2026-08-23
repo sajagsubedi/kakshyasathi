@@ -4,7 +4,9 @@ import { requireAdmin } from "@/lib/ValidatePermission";
 import { ApiResponse } from "@/lib/api/ApiResponse";
 import connectDb from "@/lib/connectDB";
 import ClassroomModel from "@/models/Classroom.model";
+import SectionModel from "@/models/Section.model";
 import { getPagination } from "@/lib/api/pagination";
+import { parseObjectId } from "@/lib/api/parseId";
 
 export const GET = withHandler(async (req: NextRequest) => {
   await requireAdmin();
@@ -19,7 +21,10 @@ export const GET = withHandler(async (req: NextRequest) => {
 
   const [items, total] = await Promise.all([
     ClassroomModel.find(filter)
-      .populate("section", "name")
+      .populate({
+        path: "section",
+        populate: { path: "class", select: "name grade" },
+      })
       .sort({ roomNumber: 1 })
       .skip(skip)
       .limit(limit)
@@ -41,6 +46,11 @@ export const POST = withHandler(async (req: NextRequest) => {
   const { roomNumber, section } = body;
 
   if (!roomNumber?.trim()) throw new Error("Room number is required");
+  if (!section) throw new Error("Section is required");
+  parseObjectId(section, "section");
+
+  const sectionExists = await SectionModel.findById(section);
+  if (!sectionExists) throw new Error("Section not found");
 
   const existing = await ClassroomModel.findOne({
     roomNumber: roomNumber.trim(),
@@ -50,8 +60,15 @@ export const POST = withHandler(async (req: NextRequest) => {
 
   const doc = await ClassroomModel.create({
     roomNumber: roomNumber.trim(),
-    section: section || undefined,
+    section,
   });
 
-  return ApiResponse(doc, "Classroom created successfully", 201);
+  const populated = await ClassroomModel.findById(doc._id)
+    .populate({
+      path: "section",
+      populate: { path: "class", select: "name grade" },
+    })
+    .lean();
+
+  return ApiResponse(populated, "Classroom created successfully", 201);
 });

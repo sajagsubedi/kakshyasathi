@@ -9,6 +9,7 @@ const studentSchema = new Schema<StudentDoc>(
     symbolNumber: { type: String, required: true, unique: true, trim: true },
     enrollmentYear: { type: String, required: true },
     guardianContact: { type: String, trim: true },
+    cardCode: { type: String, required: true, unique: true, trim: true },
   },
   { timestamps: true },
 );

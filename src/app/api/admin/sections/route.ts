@@ -15,13 +15,17 @@ export const GET = withHandler(async (req: NextRequest) => {
   const { searchParams } = new URL(req.url);
   const { page, limit, skip } = getPagination(searchParams);
   const classId = searchParams.get("class");
+  const search = searchParams.get("search");
 
   const filter: Record<string, unknown> = {};
   if (classId) {
     parseObjectId(classId, "class");
     filter.class = classId;
   }
-  console.log("Till he");
+  if (search) {
+    filter.name = { $regex: search, $options: "i" };
+  }
+
   const [items, total] = await Promise.all([
     SectionModel.find(filter)
       .populate({
@@ -36,7 +40,6 @@ export const GET = withHandler(async (req: NextRequest) => {
       .lean(),
     SectionModel.countDocuments(filter),
   ]);
-  console.log("nope", items);
 
   return ApiResponse(
     { items, total, page, limit, totalPages: Math.ceil(total / limit) },

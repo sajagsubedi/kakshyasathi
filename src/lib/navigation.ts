@@ -13,6 +13,8 @@ import {
   ClipboardCheck,
   Home,
   LucideCalendarDays,
+  DoorOpen,
+  ScanLine,
 } from "lucide-react";
 
 export const adminNav = [
@@ -32,6 +34,11 @@ export const adminNav = [
     isBottomNav: true,
   },
   {
+    label: "Academic Years",
+    href: "/admin/academic-years",
+    isBottomNav: false,
+  },
+  {
     label: "Classes",
     href: "/admin/classes",
     isBottomNav: false,
@@ -47,8 +54,18 @@ export const adminNav = [
     isBottomNav: false,
   },
   {
+    label: "Classrooms",
+    href: "/admin/classrooms",
+    isBottomNav: false,
+  },
+  {
     label: "Smart Boards",
     href: "/admin/smartboards",
+    isBottomNav: false,
+  },
+  {
+    label: "Terminals",
+    href: "/admin/terminals",
     isBottomNav: false,
   },
   {
@@ -71,11 +88,6 @@ export const adminNav = [
     href: "/admin/notices",
     isBottomNav: true,
   },
-  {
-    label: "Academic Years",
-    href: "/admin/academic-years",
-    isBottomNav: false,
-  },
 ];
 
 export const adminNavIcons = [
@@ -92,6 +104,10 @@ export const adminNavIcons = [
     icon: Users,
   },
   {
+    label: "Academic Years",
+    icon: LucideCalendarDays,
+  },
+  {
     label: "Classes",
     icon: Building2,
   },
@@ -104,8 +120,16 @@ export const adminNavIcons = [
     icon: BookOpen,
   },
   {
+    label: "Classrooms",
+    icon: DoorOpen,
+  },
+  {
     label: "Smart Boards",
     icon: Monitor,
+  },
+  {
+    label: "Terminals",
+    icon: ScanLine,
   },
   {
     label: "Timetable",
@@ -122,9 +146,5 @@ export const adminNavIcons = [
   {
     label: "Notices",
     icon: Bell,
-  },
-  {
-    label: "Academic Years",
-    icon: LucideCalendarDays,
   },
 ];
