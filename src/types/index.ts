@@ -79,6 +79,8 @@ export interface StudentDoc extends Document {
 
 export interface TeacherDoc extends Document {
   user: Types.ObjectId; // ref User
+  subjects: Types.ObjectId[]; // ref Subject[]
+  assignedSections: Types.ObjectId[]; // ref Section[]
   createdAt: Date;
   updatedAt: Date;
 }

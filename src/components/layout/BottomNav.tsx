@@ -1,8 +1,9 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { LucideIcon } from 'lucide-react';
+import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/components/layout/Sidebar';
 import { adminNavIcons } from '@/lib/navigation';
@@ -17,10 +18,13 @@ export function BottomNav({ navlinks, title, showTopHeader = false }: BottomNavP
   const pathname = usePathname();
 
   const items = navlinks.map((elem) => {
-    const cr = adminNavIcons.filter((el2) => el2.label == elem.label);
+    if (elem.icon) {
+      return { ...elem, icon: elem.icon };
+    }
+    const cr = adminNavIcons.find((el2) => el2.label === elem.label);
     return {
       ...elem,
-      icon: cr[0].icon,
+      icon: cr?.icon,
     };
   });
   return (
@@ -35,7 +39,7 @@ export function BottomNav({ navlinks, title, showTopHeader = false }: BottomNavP
       <nav className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card/95 backdrop-blur-md lg:hidden safe-area-inset-bottom">
         <ul className="flex items-center justify-around">
           {items.map((item) => {
-            const Icon = item.icon;
+            const Icon: LucideIcon = item.icon ?? Circle;
             const isActive =
               pathname === item.href || pathname.startsWith(item.href + '/');
             return (

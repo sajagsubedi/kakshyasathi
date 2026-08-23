@@ -2,20 +2,7 @@
 
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import {
-  ArrowLeft,
-  Users,
-  Building2,
-  ClipboardCheck,
-  CalendarDays,
-  GraduationCap,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  TrendingUp,
-  LayoutDashboard,
-  ChevronRight,
-} from 'lucide-react';
+import { ArrowLeft, Users, Building2, ClipboardCheck, CalendarDays, GraduationCap, CircleCheck as CheckCircle2, Circle as XCircle, Clock, TrendingUp, LayoutDashboard, ChevronRight } from 'lucide-react';
 
 import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -50,9 +37,9 @@ export default function AdminClassDetailPage() {
   const { data, isLoading } = useAdminClassById(classId);
   const { data: lookup } = useAdminLookup();
 
-  const getSectionName = lookup?.getSectionName ?? (() => 'Unknown');
-  const getTeacherName = lookup?.getTeacherName ?? (() => 'Unassigned');
-  const getSubjectName = lookup?.getSubjectName ?? (() => 'Free');
+  const getSectionName = lookup?.getSectionName ?? ((id: string) => id);
+  const getTeacherName = lookup?.getTeacherName ?? ((id: string) => id);
+  const getSubjectName = lookup?.getSubjectName ?? ((id: string) => id);
 
   const cls = data?.class;
   const sections = data?.sections ?? [];
@@ -147,30 +134,10 @@ export default function AdminClassDetailPage() {
           {activeTab === 'overview' && (
             <>
               <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
-                <StatCard
-                  label="Sections"
-                  value={sections.length}
-                  icon={Building2}
-                  accent="primary"
-                />
-                <StatCard
-                  label="Students"
-                  value={students.length}
-                  icon={Users}
-                  accent="success"
-                />
-                <StatCard
-                  label="Teachers"
-                  value={teacherCount}
-                  icon={GraduationCap}
-                  accent="chart-3"
-                />
-                <StatCard
-                  label="Attendance Rate"
-                  value={`${attendance?.overall.rate ?? 0}%`}
-                  icon={TrendingUp}
-                  accent="chart-4"
-                />
+                <StatCard label="Sections" value={sections.length} icon={Building2} accent="primary" />
+                <StatCard label="Students" value={students.length} icon={Users} accent="success" />
+                <StatCard label="Teachers" value={teacherCount} icon={GraduationCap} accent="chart-3" />
+                <StatCard label="Attendance Rate" value={`${attendance?.overall.rate ?? 0}%`} icon={TrendingUp} accent="chart-4" />
               </div>
 
               <div className="grid gap-6 lg:grid-cols-2">
@@ -234,7 +201,7 @@ export default function AdminClassDetailPage() {
                         </div>
                         <Badge variant="secondary" className="gap-1">
                           <Users className="h-3 w-3" />
-                          {(section as { studentCount?: number }).studentCount ?? 0}
+                          {section.studentCount}
                         </Badge>
                       </div>
                     ))}
@@ -331,7 +298,7 @@ export default function AdminClassDetailPage() {
                       </div>
                       <Badge variant="secondary" className="gap-1">
                         <Users className="h-3 w-3" />
-                        {(section as { studentCount?: number }).studentCount ?? 0}
+                        {section.studentCount}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -366,7 +333,7 @@ export default function AdminClassDetailPage() {
                         </TableRow>
                       </TableHeader>
                       <TableBody>
-                        {attendance.recent.map((record: any) => {
+                        {attendance.recent.map((record) => {
                           const student = students.find((s) => s.id === record.studentId);
                           return (
                             <TableRow
@@ -397,17 +364,17 @@ export default function AdminClassDetailPage() {
                                 {getSectionName(record.sectionId)}
                               </TableCell>
                               <TableCell>
-                                {record.status === 'PRESENT' && (
+                                {record.status === 'present' && (
                                   <Badge className="bg-emerald-500 text-white gap-1">
                                     <CheckCircle2 className="h-3 w-3" /> Present
                                   </Badge>
                                 )}
-                                {record.status === 'ABSENT' && (
+                                {record.status === 'absent' && (
                                   <Badge variant="destructive" className="gap-1">
                                     <XCircle className="h-3 w-3" /> Absent
                                   </Badge>
                                 )}
-                                {record.status === 'LATE' && (
+                                {record.status === 'late' && (
                                   <Badge className="bg-amber-500 text-white gap-1">
                                     <Clock className="h-3 w-3" /> Late
                                   </Badge>
@@ -454,9 +421,7 @@ export default function AdminClassDetailPage() {
                       {timetable.map((entry) => (
                         <TableRow key={entry.id}>
                           <TableCell className="whitespace-nowrap">
-                            <div className="font-medium">
-                              {entry.periodNumber ? `P${entry.periodNumber}` : 'Period'}
-                            </div>
+                            <div className="font-medium">P{entry.periodNumber}</div>
                             {(entry.startTime || entry.endTime) && (
                               <div className="text-[10px] text-muted-foreground">
                                 {entry.startTime} – {entry.endTime}
