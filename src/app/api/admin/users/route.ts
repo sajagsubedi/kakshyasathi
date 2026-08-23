@@ -172,6 +172,7 @@ export const POST = withHandler(async (req: NextRequest) => {
     }
   } catch (error) {
     await UserModel.findByIdAndDelete(user._id);
+    console.log(error);
     throw error;
   }
 

@@ -1,11 +1,9 @@
 'use client';
 
 import { CalendarDays } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { studentNav, studentBottomNav } from '@/lib/nav';
 import { useStudentTimetable, useSharedLookup, dayNames } from '@/hooks/useApi';
 
 export default function StudentTimetablePage() {
@@ -16,7 +14,7 @@ export default function StudentTimetablePage() {
   const getPeriod = lookup?.getPeriod ?? (() => undefined);
 
   return (
-    <DashboardLayout items={studentNav} bottomNavItems={studentBottomNav} title="Kakshyasathi" subtitle="Student Portal" pageTitle="Timetable" pageDescription="Your weekly class schedule" allowedRoles={['STUDENT']}>
+    <section>
       <PageHeader title="My Timetable" description="Weekly schedule for your section" />
       <Card>
         <CardHeader><CardTitle className="text-base flex items-center gap-2"><CalendarDays className="h-4 w-4" />Weekly Schedule</CardTitle></CardHeader>
@@ -44,6 +42,6 @@ export default function StudentTimetablePage() {
           {!timetable.length && <p className="text-sm text-muted-foreground">No timetable available</p>}
         </CardContent>
       </Card>
-    </DashboardLayout>
+    </section>
   );
 }

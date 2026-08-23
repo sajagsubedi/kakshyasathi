@@ -1,14 +1,12 @@
 'use client';
 
 import { ClipboardCheck, CheckCircle2, XCircle, Clock } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatCard } from '@/components/shared/StatCard';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { studentNav, studentBottomNav } from '@/lib/nav';
 import { useStudentAttendance, useStudentProfile, useSharedLookup } from '@/hooks/useApi';
 
 export default function StudentAttendancePage() {
@@ -23,7 +21,7 @@ export default function StudentAttendancePage() {
   const rate = attendance.length ? Math.round((present / attendance.length) * 100) : 0;
 
   return (
-    <DashboardLayout items={studentNav} bottomNavItems={studentBottomNav} title="Kakshyasathi" subtitle="Student Portal" pageTitle="Attendance" pageDescription="Your attendance history" allowedRoles={['STUDENT']}>
+    <section>
       <PageHeader title="My Attendance" description={profile?.sectionId ? getSectionName(profile.sectionId) : 'Your section'} />
       <div className="mb-4 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Rate" value={`${rate}%`} icon={ClipboardCheck} accent="success" />
@@ -48,6 +46,6 @@ export default function StudentAttendancePage() {
         </Table>
         {!attendance.length && <CardContent className="py-8 text-center text-sm text-muted-foreground">No attendance records yet</CardContent>}
       </Card>
-    </DashboardLayout>
+    </section>
   );
 }

@@ -6,7 +6,7 @@ import type { LucideIcon } from 'lucide-react';
 import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { NavItem } from '@/components/layout/Sidebar';
-import { adminNavIcons } from '@/lib/navigation';
+import { navIcons } from '@/lib/navigation';
 
 interface BottomNavProps {
   navlinks: NavItem[];
@@ -21,7 +21,7 @@ export function BottomNav({ navlinks, title, showTopHeader = false }: BottomNavP
     if (elem.icon) {
       return { ...elem, icon: elem.icon };
     }
-    const cr = adminNavIcons.find((el2) => el2.label === elem.label);
+    const cr = navIcons.find((el2) => el2.label === elem.label);
     return {
       ...elem,
       icon: cr?.icon,

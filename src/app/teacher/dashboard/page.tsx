@@ -2,13 +2,11 @@
 
 import Link from 'next/link';
 import { CalendarDays, GraduationCap, Bell, Clock, ArrowRight } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { StatCard } from '@/components/shared/StatCard';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { teacherNav, teacherBottomNav } from '@/lib/nav';
 import { useAuth } from '@/lib/auth-context';
 import { useTeacherTimetable, useTeacherSections, useTeacherPresence, useTeacherNotices, useSharedLookup, dayNames } from '@/hooks/useApi';
 
@@ -26,7 +24,7 @@ export default function TeacherDashboard() {
   const todaySchedule = timetable.filter((t) => t.dayOfWeek === dayIdx);
 
   return (
-    <DashboardLayout items={teacherNav} bottomNavItems={teacherBottomNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Dashboard" pageDescription={`Today is ${dayNames[dayIdx]}`} allowedRoles={['TEACHER']}>
+    <section>
       <PageHeader title={`Welcome back, ${user?.fullName?.split(' ')[0] ?? 'Teacher'}`} description="Your schedule and classroom activity" />
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Sections" value={sections.length} icon={GraduationCap} accent="primary" />
@@ -37,7 +35,7 @@ export default function TeacherDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <div><CardTitle className="text-base">Today's Schedule</CardTitle><CardDescription>{dayNames[dayIdx]}</CardDescription></div>
+            <div><CardTitle className="text-base">Today&apos;s Schedule</CardTitle><CardDescription>{dayNames[dayIdx]}</CardDescription></div>
             <Link href="/teacher/timetable" className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium transition-colors hover:bg-muted">
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
@@ -63,6 +61,6 @@ export default function TeacherDashboard() {
           </CardContent>
         </Card>
       </div>
-    </DashboardLayout>
+    </section>
   );
 }

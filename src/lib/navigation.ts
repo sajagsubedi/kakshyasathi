@@ -96,7 +96,58 @@ export const adminNav = [
   },
 ];
 
-export const adminNavIcons = [
+export const studentNav = [
+  {
+    label: "Dashboard",
+    href: "/student/dashboard",
+    isBottomNav: true,
+  },
+  {
+    label: "Attendance",
+    href: "/student/attendance",
+    isBottomNav: true,
+  },
+  {
+    label: "Timetable",
+    href: "/student/timetable",
+    isBottomNav: true,
+  },
+  {
+    label: "Notices",
+    href: "/student/notices",
+    isBottomNav: true,
+  },
+];
+
+export const teacherNav = [
+  {
+    label: "Dashboard",
+    href: "/teacher/dashboard",
+    isBottomNav: true,
+  },
+  {
+    label: "Timetable",
+    href: "/teacher/timetable",
+    isBottomNav: true,
+  },
+  {
+    label: "Sections",
+    href: "/teacher/sections",
+    isBottomNav: true,
+  },
+  {
+    label: "Presence",
+    href: "/teacher/presence",
+    isBottomNav: false,
+  },
+  {
+    label: "Notices",
+    href: "/teacher/notices",
+    isBottomNav: true,
+  },
+];
+
+export const navIcons = [
   {
     label: "Home",
     icon: Home,
@@ -156,5 +207,9 @@ export const adminNavIcons = [
   {
     label: "Notices",
     icon: Bell,
+  },
+  {
+    label: "Presence",
+    icon: Clock,
   },
 ];

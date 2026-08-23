@@ -6,7 +6,7 @@ import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { Circle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { adminNavIcons } from '@/lib/navigation';
+import { navIcons } from '@/lib/navigation';
 
 export interface NavItem {
   label: string;
@@ -27,7 +27,7 @@ export function Sidebar({ navlinks, title, subtitle }: SidebarProps) {
     if (elem.icon) {
       return { ...elem, icon: elem.icon };
     }
-    const cr = adminNavIcons.find((el2) => el2.label === elem.label);
+    const cr = navIcons.find((el2) => el2.label === elem.label);
     return {
       ...elem,
       icon: cr?.icon,

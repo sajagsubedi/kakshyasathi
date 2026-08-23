@@ -1,11 +1,9 @@
 'use client';
 
 import { Bell } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { teacherNav, teacherBottomNav } from '@/lib/nav';
 import { useTeacherNotices, useSharedLookup } from '@/hooks/useApi';
 
 export default function TeacherNoticesPage() {
@@ -14,7 +12,7 @@ export default function TeacherNoticesPage() {
   const getSectionName = lookup?.getSectionName ?? ((id: string) => id);
 
   return (
-    <DashboardLayout items={teacherNav} bottomNavItems={teacherBottomNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Notices" pageDescription="School announcements" allowedRoles={['TEACHER']}>
+    <section>
       <PageHeader title="Notices" description={`${notices.length} active notices`} />
       <div className="grid gap-4">
         {notices.map((notice) => (
@@ -38,6 +36,5 @@ export default function TeacherNoticesPage() {
         ))}
         {!notices.length && <p className="text-sm text-muted-foreground">No notices available</p>}
       </div>
-    </DashboardLayout>
-  );
+    </section>);
 }

@@ -5,7 +5,6 @@ import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { teacherNav, teacherBottomNav } from '@/lib/nav';
 import { useTeacherSections, useSharedLookup } from '@/hooks/useApi';
 
 export default function TeacherSectionsPage() {
@@ -15,7 +14,7 @@ export default function TeacherSectionsPage() {
   const users = lookup?.users ?? [];
 
   return (
-    <DashboardLayout items={teacherNav} bottomNavItems={teacherBottomNav} title="Kakshyasathi" subtitle="Teacher Portal" pageTitle="Sections" pageDescription="Your assigned classroom sections" allowedRoles={['TEACHER']}>
+    <section>
       <PageHeader title="Assigned Sections" description={`${sections.length} sections`} />
       <div className="grid gap-4 sm:grid-cols-2">
         {sections.map((section) => {
@@ -33,6 +32,6 @@ export default function TeacherSectionsPage() {
           );
         })}
       </div>
-    </DashboardLayout>
+    </section>
   );
 }

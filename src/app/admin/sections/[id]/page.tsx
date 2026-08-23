@@ -17,7 +17,6 @@ import {
   ChevronRight,
 } from 'lucide-react';
 
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,7 +31,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Progress } from '@/components/ui/progress';
-import { adminNav, adminBottomNav } from '@/lib/nav';
 import {
   useAdminClassById,
   useAdminLookup,
@@ -74,15 +72,7 @@ export default function AdminClassDetailPage() {
   ];
 
   return (
-    <DashboardLayout
-      items={adminNav}
-      title="Kakshyasathi"
-      subtitle="Admin Portal"
-      pageTitle="Class Details"
-      pageDescription={cls ? `${cls.name} - Academic Year ${cls.academicYear}` : 'Loading class information...'}
-      allowedRoles={['ADMIN']}
-      bottomNavItems={adminBottomNav}
-    >
+    <section>
       <div className="mb-4">
         <Button variant="ghost" size="sm" onClick={() => router.push('/admin/classes')} className="gap-1 text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4" />
@@ -493,6 +483,6 @@ export default function AdminClassDetailPage() {
           )}
         </>
       )}
-    </DashboardLayout>
+    </section>
   );
 }
