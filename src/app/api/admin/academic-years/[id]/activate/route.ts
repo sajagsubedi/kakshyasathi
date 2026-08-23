@@ -13,6 +13,7 @@ interface RouteContext {
 
 export const PATCH = withHandler(async (_req, context: RouteContext) => {
   await requireAdmin();
+  console.log("Till here")
   await connectDb();
 
   const { id } = await context.params;
