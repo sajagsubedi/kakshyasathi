@@ -22,6 +22,7 @@ export const GET = withHandler(
       .populate("class", "name grade academicYear")
       .lean();
     if (!doc) throw new Error("Section not found");
+    
 
     return ApiResponse(doc, "Section fetched successfully");
   },

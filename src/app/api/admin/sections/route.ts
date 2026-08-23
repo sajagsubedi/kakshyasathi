@@ -21,16 +21,22 @@ export const GET = withHandler(async (req: NextRequest) => {
     parseObjectId(classId, "class");
     filter.class = classId;
   }
-
+  console.log("Till he");
   const [items, total] = await Promise.all([
     SectionModel.find(filter)
-      .populate("class", "name grade academicYear")
+      .populate({
+        path: "class",
+        populate: {
+          path: "academicYear",
+        },
+      })
       .sort({ name: 1 })
       .skip(skip)
       .limit(limit)
       .lean(),
     SectionModel.countDocuments(filter),
   ]);
+  console.log("nope", items);
 
   return ApiResponse(
     { items, total, page, limit, totalPages: Math.ceil(total / limit) },

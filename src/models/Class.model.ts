@@ -5,7 +5,11 @@ const classSchema = new Schema<ClassDoc>(
   {
     name: { type: String, required: true, trim: true },
     grade: { type: Number, required: true },
-    academicYear: { type: String, required: true, trim: true },
+    academicYear: {
+      type: Schema.Types.ObjectId,
+      ref: "AcademicYear",
+      required: true,
+    },
   },
   { timestamps: true },
 );

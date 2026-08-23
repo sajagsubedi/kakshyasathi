@@ -12,6 +12,7 @@ import {
   Bell,
   ClipboardCheck,
   Home,
+  LucideCalendarDays,
 } from "lucide-react";
 
 export const adminNav = [
@@ -70,6 +71,11 @@ export const adminNav = [
     href: "/admin/notices",
     isBottomNav: true,
   },
+  {
+    label: "Academic Years",
+    href: "/admin/academic-years",
+    isBottomNav: false,
+  },
 ];
 
 export const adminNavIcons = [
@@ -116,5 +122,9 @@ export const adminNavIcons = [
   {
     label: "Notices",
     icon: Bell,
+  },
+  {
+    label: "Academic Years",
+    icon: LucideCalendarDays,
   },
 ];

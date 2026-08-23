@@ -99,7 +99,7 @@ export interface AcademicYearDoc extends Document {
 export interface ClassDoc extends Document {
   name: string;
   grade: number;
-  academicYear: string;
+  academicYear: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }

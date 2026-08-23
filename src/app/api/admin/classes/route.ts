@@ -11,25 +11,44 @@ export const GET = withHandler(async (req: NextRequest) => {
   await connectDb();
 
   const { searchParams } = new URL(req.url);
+
   const { page, limit, skip } = getPagination(searchParams);
+
   const academicYear = searchParams.get("academicYear");
   const search = searchParams.get("search");
 
   const filter: Record<string, unknown> = {};
-  if (academicYear) filter.academicYear = academicYear;
-  if (search) filter.name = { $regex: search, $options: "i" };
+
+  if (academicYear) {
+    filter.academicYear = academicYear;
+  }
+
+  if (search) {
+    filter.name = {
+      $regex: search,
+      $options: "i",
+    };
+  }
 
   const [items, total] = await Promise.all([
     ClassModel.find(filter)
+      .populate("academicYear", "_id label")
       .sort({ grade: 1, name: 1 })
       .skip(skip)
       .limit(limit)
       .lean(),
+
     ClassModel.countDocuments(filter),
   ]);
 
   return ApiResponse(
-    { items, total, page, limit, totalPages: Math.ceil(total / limit) },
+    {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    },
     "Classes fetched successfully",
   );
 });
