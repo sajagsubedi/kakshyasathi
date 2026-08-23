@@ -1,16 +1,14 @@
-export type AppRole = 'ADMIN' | 'TEACHER' | 'STUDENT' | 'SMARTBOARD';
+import { UserRole } from "@/types";
 
-export function roleDashboardPath(role: AppRole): string {
+export function roleDashboardPath(role: UserRole): string {
   switch (role) {
-    case 'ADMIN':
-      return '/admin/dashboard';
-    case 'TEACHER':
-      return '/teacher/dashboard';
-    case 'STUDENT':
-      return '/student/dashboard';
-    case 'SMARTBOARD':
-      return '/smartboard/dashboard';
+    case "admin":
+      return "/admin/dashboard";
+    case "teacher":
+      return "/teacher/dashboard";
+    case "student":
+      return "/student/dashboard";
     default:
-      return '/signin';
+      return "/signin";
   }
 }

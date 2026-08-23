@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { errorResponse } from "@/lib/api/ApiResponse";
+import { ErrorResponse } from "@/lib/api/ApiResponse";
 
 type RouteContext = { params: Promise<Record<string, string>> };
 
@@ -14,7 +14,7 @@ export function withHandler(handler: Handler): Handler {
     try {
       return await handler(req, context);
     } catch (error) {
-      return errorResponse(error);
+      return ErrorResponse(error);
     }
   };
 }

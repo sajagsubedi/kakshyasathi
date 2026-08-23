@@ -1,13 +1,13 @@
 import { NextResponse } from "next/server";
 
-import { AppError } from "@/lib/api/ApiError";
+import { ApiError } from "@/lib/api/ApiError";
 
-export function success<T>(data: T, status = 200) {
-  return NextResponse.json({ success: true, data }, { status });
+export function ApiResponse<T>(data: T, message?: string, status = 200) {
+  return NextResponse.json({ success: true, data, message }, { status });
 }
 
-export function errorResponse(error: unknown) {
-  if (error instanceof AppError) {
+export function ErrorResponse(error: unknown) {
+  if (error instanceof ApiError) {
     return NextResponse.json(
       { success: false, error: error.message, code: error.code },
       { status: error.statusCode },

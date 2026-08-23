@@ -7,7 +7,7 @@ dns.setServers(["8.8.8.8", "8.8.4.4"]);
 
 type connectionObject = {
   isConnected?: number;
-};  
+};
 
 const connection: connectionObject = {};
 

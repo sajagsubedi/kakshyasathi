@@ -7,6 +7,8 @@ import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { InstallAppButton } from "@/components/pwa/InstallAppButton";
 import { cn } from "@/lib/utils";
 import { ThemeToastContainer } from "@/components/theme/ThemeToastContainer";
+import { QueryProvider } from "@/providers/QueryProvider";
+import { AuthProvider } from "@/providers/SessionProvider";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -124,13 +126,17 @@ export default function RootLayout({
           font-sans
         "
       >
-        <ThemeProvider>
-          <ThemeToastContainer />
-          {children}
+        <AuthProvider>
 
-          <InstallAppButton />
-        </ThemeProvider>
+          <ThemeProvider>
+            <QueryProvider>
+              <ThemeToastContainer />
+              {children}
+              <InstallAppButton />
+            </QueryProvider>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
-    </html>
+    </html >
   );
 }

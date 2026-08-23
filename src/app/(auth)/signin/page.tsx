@@ -41,7 +41,7 @@ function SignInForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   useEffect(() => {
-    console.log("Push to ", callbackUrl);
+    console.log("refresh router")
     router.refresh();
   }, [router]);
 
@@ -55,9 +55,7 @@ function SignInForm() {
     if (result?.error) {
       toast.error("Invalid credentials");
     } else {
-      console.log("Push to ", callbackUrl);
       toast.success("Logged in successfully!");
-
       router.push(callbackUrl);
     }
   };

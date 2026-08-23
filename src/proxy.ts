@@ -1,17 +1,12 @@
 import { auth } from "@/lib/auth";
 import { roleDashboardPath } from "@/lib/routes";
+import { UserRole } from "@/types";
 import { NextResponse } from "next/server";
 
-const publicPaths = [
-  "/signin",
-  "/smartboard/setup",
-  "/api/auth",
-  "forgot-password",
-];
+const publicPaths = ["/signin", "/api/auth"];
 
-export const proxy = auth((req) => {
+const proxy = auth((req) => {
   const { pathname } = req.nextUrl;
-  console.log("here", pathname);
 
   if (
     publicPaths.some((p) => pathname.startsWith(p)) ||
@@ -22,7 +17,7 @@ export const proxy = auth((req) => {
   }
 
   const isAuthenticated = !!req.auth;
-  const role = req.auth?.user?.userRole;
+  const role = req.auth?.user?.role;
 
   if (!isAuthenticated) {
     const signInUrl = new URL("/signin", req.url);
@@ -31,10 +26,9 @@ export const proxy = auth((req) => {
   }
 
   const rolePrefixes = [
-    { prefix: "/admin", roles: ["ADMIN"] },
-    { prefix: "/teacher", roles: ["TEACHER"] },
-    { prefix: "/student", roles: ["STUDENT"] },
-    { prefix: "/smartboard", roles: ["SMARTBOARD"] },
+    { prefix: "/admin", roles: [UserRole.admin] },
+    { prefix: "/teacher", roles: [UserRole.teacher] },
+    { prefix: "/student", roles: [UserRole.student] },
   ];
 
   for (const { prefix, roles } of rolePrefixes) {
@@ -44,13 +38,15 @@ export const proxy = auth((req) => {
   }
 
   if (pathname === "/") {
-    const newUrl = new URL(role ? roleDashboardPath(role) : "/signin", req.url);
-    console.log("new url is ", newUrl);
-    return NextResponse.next();
+    return NextResponse.redirect(
+      new URL(role ? roleDashboardPath(role) : "/signin", req.url),
+    );
   }
 
   return NextResponse.next();
 });
+
+export default proxy;
 
 export const config = {
   matcher: [
