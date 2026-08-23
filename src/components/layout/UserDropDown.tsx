@@ -26,9 +26,9 @@ interface UserDropDownProps {
 }
 
 const roleLabel: Record<string, string> = {
-    ADMIN: "Administrator",
-    TEACHER: "Teacher",
-    STUDENT: "Student",
+    admin: "Administrator",
+    teacher: "Teacher",
+    student: "Student",
 };
 
 export default function UserDropDown({ user }: UserDropDownProps) {

@@ -1,16 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
+import { ErrorResponse } from "./ApiResponse";
 
-import { ErrorResponse } from "@/lib/api/ApiResponse";
+type DefaultRouteContext = {
+  params: Promise<Record<string, string>>;
+};
 
-type RouteContext = { params: Promise<Record<string, string>> };
-
-type Handler = (
+type Handler<C = DefaultRouteContext> = (
   req: NextRequest,
-  context: RouteContext,
+  context: C,
 ) => Promise<NextResponse> | NextResponse;
 
-export function withHandler(handler: Handler): Handler {
-  return async (req, context) => {
+export function withHandler<C = DefaultRouteContext>(handler: Handler<C>) {
+  return async (req: NextRequest, context: C) => {
     try {
       return await handler(req, context);
     } catch (error) {
