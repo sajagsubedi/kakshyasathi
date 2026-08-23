@@ -1,6 +1,7 @@
-// src/hooks/useAdminClasses.ts
+// src/hooks/admin/useClasses.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { adminRequest } from "@/hooks/admin/http";
 import { ApiResponse } from "@/types/response";
 
 export interface ClassItem {
@@ -24,6 +25,97 @@ export interface ClassesListResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface AdminClassDetail {
+  class: {
+    _id: string;
+    name: string;
+    grade: number;
+    academicYear: string;
+  };
+  sections: Array<{
+    id: string;
+    _id: string;
+    name: string;
+    academicYear: string;
+    studentCount: number;
+    classroom?: {
+      _id: string;
+      roomNumber: string;
+    } | null;
+  }>;
+  students: Array<{
+    id: string;
+    studentId: string;
+    userId: string;
+    fullName: string;
+    username: string;
+    email?: string;
+    phone?: string;
+    gender?: string;
+    sectionId: string;
+    sectionName?: string;
+    rollNumber: string;
+    symbolNumber?: string;
+    enrollmentYear?: string;
+  }>;
+  attendance: {
+    today: {
+      present: number;
+      absent: number;
+      late: number;
+    };
+    overall: {
+      rate: number;
+      total: number;
+      present: number;
+      absent: number;
+      late: number;
+    };
+    recent: Array<{
+      id: string;
+      date: string;
+      status: string;
+      studentId: string;
+      userId?: string;
+      studentName: string;
+      username?: string;
+      rollNumber?: string;
+      scannedAt: string;
+      sectionId: string;
+      sectionName?: string;
+      periodNumber?: number;
+    }>;
+  };
+  timetable: Array<{
+    id: string;
+    dayOfWeek: number;
+    dayOfWeekName?: string;
+    periodNumber: number;
+    sectionId: string;
+    sectionName?: string;
+    subjectId: string;
+    subjectName: string;
+    subjectCode?: string;
+    teacherId: string;
+    teacherName: string;
+    classroomId?: string;
+    roomNumber?: string;
+    startTime: string;
+    endTime: string;
+    customStartTime?: string;
+    customEndTime?: string;
+    isCustomTiming: boolean;
+  }>;
+  teacherCount: number;
+  teachers?: Array<{
+    _id: string;
+    name: string;
+    username: string;
+    subjects: string[];
+    assignedSections: string[];
+  }>;
 }
 
 const CLASSES_KEY = ["admin", "classes"] as const;
@@ -140,3 +232,19 @@ export function useAdminClasses(params: ClassesQueryParams = {}) {
     deleteClass,
   };
 }
+
+export function useAdminClassDetail(id?: string) {
+  return useQuery({
+    queryKey: ["admin", "class", id, "details"],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      return adminRequest<AdminClassDetail>(
+        axios.get(`/api/admin/classes/${id}/details`),
+        "Failed to load class details.",
+      );
+    },
+  });
+}
+
+export const useAdminClass = useAdminClassDetail;
+export const useAdminClassById = useAdminClassDetail;

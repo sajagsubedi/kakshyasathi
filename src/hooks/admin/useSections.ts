@@ -1,7 +1,9 @@
-// src/hooks/useAdminSections.ts
+// src/hooks/admin/useSections.ts
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import { adminRequest } from "@/hooks/admin/http";
 import { ApiResponse } from "@/types/response";
+import type { DeviceStatus } from "@/types";
 
 export interface ClassRef {
   _id: string;
@@ -10,7 +12,7 @@ export interface ClassRef {
   academicYear?: {
     label: string;
     _id: string;
-  };
+  } | string;
 }
 
 export interface SectionItem {
@@ -27,6 +29,116 @@ export interface SectionsListResponse {
   page: number;
   limit: number;
   totalPages: number;
+}
+
+export interface AdminSectionDetail {
+  section: {
+    _id: string;
+    name: string;
+    class: {
+      _id: string;
+      name: string;
+      grade: number;
+      academicYear: string;
+    };
+  };
+  classroom: {
+    _id: string;
+    roomNumber: string;
+  } | null;
+  smartBoard: {
+    _id: string;
+    deviceKey: string;
+    status: DeviceStatus;
+    lastSeenAt?: string;
+  } | null;
+  terminal: {
+    _id: string;
+    terminalCode: string;
+    deviceKey: string;
+    status: DeviceStatus;
+    lastSeenAt?: string;
+    lastSyncedSequence: number;
+  } | null;
+  students: Array<{
+    _id: string;
+    id: string;
+    userId: string;
+    fullName: string;
+    username: string;
+    email?: string;
+    phone?: string;
+    gender?: string;
+    rollNumber: string;
+    symbolNumber?: string;
+    enrollmentYear?: string;
+    guardianContact?: string;
+  }>;
+  teachers: Array<{
+    _id: string;
+    userId: string;
+    fullName: string;
+    username: string;
+    email?: string;
+    subjects: Array<{ _id: string; name: string; code: string }>;
+  }>;
+  timetable: Array<{
+    id: string;
+    dayOfWeek: string;
+    dayOfWeekNumber: number;
+    periodNumber: number;
+    subjectId: string;
+    subjectName: string;
+    subjectCode?: string;
+    teacherId: string;
+    teacherName: string;
+    classroomId?: string;
+    roomNumber?: string;
+    customStartTime?: string;
+    customEndTime?: string;
+    startTime?: string;
+    endTime?: string;
+    isCustomTiming: boolean;
+  }>;
+  todaySchedule: Array<{
+    id: string;
+    periodNumber: number;
+    subjectName: string;
+    subjectCode?: string;
+    teacherName: string;
+    substituteTeacherName?: string;
+    originalTeacherName?: string;
+    roomNumber?: string;
+    startTime?: string;
+    endTime?: string;
+    isCustomTiming: boolean;
+  }>;
+  attendance: {
+    today: {
+      present: number;
+      absent: number;
+      late: number;
+    };
+    overall: {
+      rate: number;
+      total: number;
+      present: number;
+      absent: number;
+      late: number;
+    };
+    recent: Array<{
+      id: string;
+      date: string;
+      status: string;
+      studentId: string;
+      userId?: string;
+      studentName: string;
+      username?: string;
+      rollNumber?: string;
+      scannedAt?: string;
+      periodNumber?: number;
+    }>;
+  };
 }
 
 const SECTIONS_KEY = ["admin", "sections"] as const;
@@ -136,3 +248,19 @@ export function useAdminSections(params: SectionsQueryParams = {}) {
     deleteSection,
   };
 }
+
+export function useAdminSectionDetail(id?: string) {
+  return useQuery({
+    queryKey: ["admin", "section", id, "details"],
+    enabled: Boolean(id),
+    queryFn: async () => {
+      return adminRequest<AdminSectionDetail>(
+        axios.get(`/api/admin/sections/${id}/details`),
+        "Failed to load section details.",
+      );
+    },
+  });
+}
+
+export const useAdminSection = useAdminSectionDetail;
+export const useAdminSectionById = useAdminSectionDetail;

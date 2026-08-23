@@ -13,6 +13,7 @@ import {
   ChevronRight,
   Search,
 } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { toast } from "react-toastify";
 
 import { PageHeader } from "@/components/shared/PageHeader";
@@ -54,6 +55,7 @@ import {
 import { useAdminClasses } from "@/hooks/admin/useClasses";
 
 export default function AdminSectionsPage() {
+  const router = useRouter();
   const [page, setPage] = React.useState(1);
   const [search, setSearch] = React.useState("");
   const [searchInput, setSearchInput] = React.useState("");
@@ -426,6 +428,7 @@ export default function AdminSectionsPage() {
                     className={className}
                     grade={grade}
                     academicYear={academicYear}
+                    onOpen={() => router.push(`/admin/sections/${section._id}`)}
                     onEdit={() =>
                       openEditDialog(section)
                     }
@@ -661,6 +664,7 @@ interface SectionCardProps {
     label: string;
     _id: string;
   };
+  onOpen: () => void;
   onEdit: () => void;
   onDelete: () => void;
   isDeleting: boolean;
@@ -671,24 +675,30 @@ function SectionCard({
   className,
   grade,
   academicYear,
+  onOpen,
   onEdit,
   onDelete,
   isDeleting,
 }: SectionCardProps) {
   return (
-    <Card className="group overflow-hidden transition-all hover:border-primary/30 hover:shadow-md">
+    <Card className="group overflow-hidden transition-all hover:border-primary/40 hover:shadow-md">
       <CardContent className="p-0">
         {/* Header */}
         <div className="border-b border-border bg-gradient-to-r from-primary/15 via-primary/10 to-chart-3/10 px-5 py-4">
           <div className="flex items-start justify-between">
-            <div className="flex min-w-0 items-center gap-3">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/20">
+            <button
+              type="button"
+              onClick={onOpen}
+              className="flex min-w-0 flex-1 items-center gap-3 text-left"
+            >
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-primary/20 transition-colors group-hover:bg-primary/30">
                 <GraduationCap className="h-5 w-5 text-primary" />
               </div>
 
               <div className="min-w-0">
-                <p className="truncate font-bold tracking-tight">
-                  Section {section.name}
+                <p className="truncate font-bold tracking-tight group-hover:text-primary transition-colors flex items-center gap-1">
+                  <span>Section {section.name}</span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
                 </p>
 
                 <div className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground">
@@ -706,7 +716,7 @@ function SectionCard({
                   )}
                 </div>
               </div>
-            </div>
+            </button>
 
             <Badge
               variant="secondary"
