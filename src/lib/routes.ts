@@ -1,6 +1,6 @@
 import { UserRole } from "@/types";
 
-export function roleDashboardPath(role: UserRole): string {
+export function roleDashboardPath(role: UserRole | "smartboard"): string {
   switch (role) {
     case "admin":
       return "/admin/dashboard";

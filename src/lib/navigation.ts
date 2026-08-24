@@ -147,6 +147,29 @@ export const teacherNav = [
   },
 ];
 
+export const smartboardNav = [
+  {
+    label: "Dashboard",
+    href: "/smartboard/dashboard",
+    isBottomNav: true,
+  },
+  {
+    label: "Timetable",
+    href: "/smartboard/timetable",
+    isBottomNav: true,
+  },
+  {
+    label: "Attendance",
+    href: "/smartboard/attendance",
+    isBottomNav: true,
+  },
+  {
+    label: "Notices",
+    href: "/smartboard/notices",
+    isBottomNav: true,
+  },
+];
+
 export const navIcons = [
   {
     label: "Home",

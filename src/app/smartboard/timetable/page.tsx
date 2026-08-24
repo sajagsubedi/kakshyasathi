@@ -1,11 +1,9 @@
 'use client';
 
 import { CalendarClock } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { smartBoardNav } from '@/lib/nav';
 import { useSmartboardTimetable } from '@/hooks/useApi';
 
 export default function SmartBoardTimetablePage() {

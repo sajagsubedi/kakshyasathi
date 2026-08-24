@@ -3,17 +3,12 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { ScanLine, Clock, User, BookOpen, UserCheck, Monitor, Wifi, CheckCircle2, Bell, ArrowRight } from 'lucide-react';
-import { DashboardLayout } from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { smartBoardNav } from '@/lib/nav';
-import { useAuth } from '@/lib/auth-context';
 import { useSmartboardClassroom, useSmartboardNotices, useSmartboardAttendance } from '@/hooks/useApi';
 
 export default function SmartBoardDashboard() {
-  const { user } = useAuth();
   const [currentTime, setCurrentTime] = React.useState(new Date());
   const { data: classroom } = useSmartboardClassroom();
   const { data: notices = [] } = useSmartboardNotices();

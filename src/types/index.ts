@@ -1,11 +1,12 @@
 import { Document, Types } from "mongoose";
 
-// // ---------- Enums / literal unions ----------
+// ---------- Enums / literal unions ----------
 
 export enum UserRole {
   admin = "admin",
   teacher = "teacher",
   student = "student",
+  smartboard = "smartboard",
 }
 
 export enum DeviceStatus {
@@ -52,7 +53,7 @@ export enum DayOfWeek {
   saturday = "saturday",
 }
 
-// // ---------- User & Auth ----------
+// ---------- User & Auth ----------
 
 export interface UserDoc extends Document {
   role: UserRole;
@@ -67,8 +68,8 @@ export interface UserDoc extends Document {
 }
 
 export interface StudentDoc extends Document {
-  user: Types.ObjectId; // ref User
-  section: Types.ObjectId; // ref Section
+  user: Types.ObjectId;
+  section: Types.ObjectId;
   rollNumber: string;
   guardianContact?: string;
   symbolNumber: string;
@@ -78,17 +79,17 @@ export interface StudentDoc extends Document {
 }
 
 export interface TeacherDoc extends Document {
-  user: Types.ObjectId; // ref User
-  subjects: Types.ObjectId[]; // ref Subject[]
-  assignedSections: Types.ObjectId[]; // ref Section[]
+  user: Types.ObjectId;
+  subjects: Types.ObjectId[];
+  assignedSections: Types.ObjectId[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-// // ---------- School structure ----------
+// ---------- School structure ----------
 
 export interface AcademicYearDoc extends Document {
-  label: string; // e.g. "2082/83"
+  label: string;
   startDate: Date;
   endDate: Date;
   isActive: boolean;
@@ -105,7 +106,7 @@ export interface ClassDoc extends Document {
 }
 
 export interface SectionDoc extends Document {
-  class: Types.ObjectId; // ref Class
+  class: Types.ObjectId;
   name: string;
   createdAt: Date;
   updatedAt: Date;
@@ -122,13 +123,13 @@ export interface ClassroomDoc extends Document {
   roomNumber: string;
   createdAt: Date;
   updatedAt: Date;
-  section: Types.ObjectId; //section
+  section: Types.ObjectId;
 }
 
-// // ---------- Devices ----------
+// ---------- Devices ----------
 
 export interface SmartBoardDoc extends Document {
-  classroom: Types.ObjectId; // ref Classroom
+  classroom: Types.ObjectId;
   deviceKey: string;
   status: DeviceStatus;
   lastSeenAt?: Date;
@@ -137,8 +138,8 @@ export interface SmartBoardDoc extends Document {
 }
 
 export interface AttendanceTerminalDoc extends Document {
-  terminalCode: string; // e.g. AT-204
-  classroom: Types.ObjectId; // ref Classroom
+  terminalCode: string;
+  classroom: Types.ObjectId;
   deviceKey: string;
   status: DeviceStatus;
   lastSeenAt?: Date;
@@ -147,24 +148,24 @@ export interface AttendanceTerminalDoc extends Document {
   updatedAt: Date;
 }
 
-// // ---------- Timetable ----------
+// ---------- Timetable ----------
 
 export interface GlobalTimetableDoc extends Document {
-  academicYear: Types.ObjectId; // ref AcademicYear
+  academicYear: Types.ObjectId;
   periodNumber: number;
-  startTime: string; // "10:15"
-  endTime: string; // "11:00"
+  startTime: string;
+  endTime: string;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface SectionTimetableDoc extends Document {
-  section: Types.ObjectId; // ref Section
+  section: Types.ObjectId;
   dayOfWeek: DayOfWeek;
   periodNumber: number;
-  subject: Types.ObjectId; // ref Subject
-  teacher: Types.ObjectId; // ref Teacher
-  classroom: Types.ObjectId; // ref Classroom
+  subject: Types.ObjectId;
+  teacher: Types.ObjectId;
+  classroom: Types.ObjectId;
   customStartTime?: string;
   customEndTime?: string;
   createdAt: Date;
@@ -172,37 +173,37 @@ export interface SectionTimetableDoc extends Document {
 }
 
 export interface SubstitutionDoc extends Document {
-  section: Types.ObjectId; // ref Section
+  section: Types.ObjectId;
   periodNumber: number;
   date: Date;
-  originalTeacher: Types.ObjectId; // ref Teacher
-  substituteTeacher: Types.ObjectId; // ref Teacher
+  originalTeacher: Types.ObjectId;
+  substituteTeacher: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// // ---------- Attendance & presence ----------
+// ---------- Attendance & presence ----------
 
 export interface ScanEventDoc extends Document {
-  terminal: Types.ObjectId; // ref AttendanceTerminal
+  terminal: Types.ObjectId;
   cardCode: string;
-  scannedAt: Date; // terminal's own clock
-  receivedAt: Date; // backend clock
+  scannedAt: Date;
+  receivedAt: Date;
   sequenceNumber: number;
   personType: PersonType;
-  person?: Types.ObjectId; // resolved Student or Teacher
+  person?: Types.ObjectId;
   status: ScanEventStatus;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface AttendanceSessionDoc extends Document {
-  section: Types.ObjectId; // ref Section
-  classroom: Types.ObjectId; // ref Classroom
+  section: Types.ObjectId;
+  classroom: Types.ObjectId;
   date: Date;
   periodNumber: number;
-  effectiveTeacher: Types.ObjectId; // ref Teacher
-  effectiveSubject: Types.ObjectId; // ref Subject
+  effectiveTeacher: Types.ObjectId;
+  effectiveSubject: Types.ObjectId;
   startTime: string;
   endTime: string;
   createdAt: Date;
@@ -210,9 +211,9 @@ export interface AttendanceSessionDoc extends Document {
 }
 
 export interface AttendanceRecordDoc extends Document {
-  attendanceSession: Types.ObjectId; // ref AttendanceSession
-  student: Types.ObjectId; // ref Student
-  scanEvent: Types.ObjectId; // ref ScanEvent
+  attendanceSession: Types.ObjectId;
+  student: Types.ObjectId;
+  scanEvent: Types.ObjectId;
   markedAt: Date;
   status: AttendanceStatus;
   createdAt: Date;
@@ -220,27 +221,146 @@ export interface AttendanceRecordDoc extends Document {
 }
 
 export interface TeacherPresenceRecordDoc extends Document {
-  teacher: Types.ObjectId; // ref Teacher
-  classroom: Types.ObjectId; // ref Classroom
+  teacher: Types.ObjectId;
+  classroom: Types.ObjectId;
   date: Date;
   periodNumber: number;
-  entryScanEvent: Types.ObjectId; // ref ScanEvent
-  exitScanEvent?: Types.ObjectId; // ref ScanEvent
+  entryScanEvent: Types.ObjectId;
+  exitScanEvent?: Types.ObjectId;
   entryTime: Date;
   exitTime?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
 
-// // ---------- Notices ----------
+// ---------- Notices ----------
 
 export interface NoticeDoc extends Document {
   title: string;
   body: string;
-  author: Types.ObjectId; // ref User
+  author: Types.ObjectId;
   targetType: NoticeTargetType;
-  targetSections: Types.ObjectId[]; // ref Section, empty when targetType is "all"
+  targetSections: Types.ObjectId[];
   publishedAt: Date;
   createdAt: Date;
   updatedAt: Date;
 }
+
+// ============================================================
+// POPULATED TYPES
+// ============================================================
+
+/**
+ * Class with academic year populated
+ */
+export type PopulatedClass = Omit<ClassDoc, "academicYear"> & {
+  academicYear: AcademicYearDoc;
+};
+
+/**
+ * Section with Class populated
+ */
+export type PopulatedSection = Omit<SectionDoc, "class"> & {
+  class: PopulatedClass;
+};
+
+/**
+ * Classroom with Section -> Class -> AcademicYear populated
+ */
+export type PopulatedClassroom = Omit<ClassroomDoc, "section"> & {
+  section: PopulatedSection;
+};
+
+/**
+ * SmartBoard with Classroom -> Section -> Class -> AcademicYear populated
+ */
+export type PopulatedSmartBoard = Omit<SmartBoardDoc, "classroom"> & {
+  classroom: PopulatedClassroom;
+};
+
+/**
+ * Teacher with User, Subjects and Sections populated
+ */
+export type PopulatedTeacher = Omit<
+  TeacherDoc,
+  "user" | "subjects" | "assignedSections"
+> & {
+  user: UserDoc;
+  subjects: SubjectDoc[];
+  assignedSections: PopulatedSection[];
+};
+
+/**
+ * Student with User and Section populated
+ */
+export type PopulatedStudent = Omit<StudentDoc, "user" | "section"> & {
+  user: UserDoc;
+  section: PopulatedSection;
+};
+
+/**
+ * Section timetable with all major references populated
+ */
+export type PopulatedSectionTimetable = Omit<
+  SectionTimetableDoc,
+  "section" | "subject" | "teacher" | "classroom"
+> & {
+  section: PopulatedSection;
+  subject: SubjectDoc;
+  teacher: TeacherDoc;
+  classroom: PopulatedClassroom;
+};
+
+/**
+ * Attendance terminal with classroom populated
+ */
+export type PopulatedAttendanceTerminal = Omit<
+  AttendanceTerminalDoc,
+  "classroom"
+> & {
+  classroom: PopulatedClassroom;
+};
+
+/**
+ * Attendance session with references populated
+ */
+export type PopulatedAttendanceSession = Omit<
+  AttendanceSessionDoc,
+  "section" | "classroom" | "effectiveTeacher" | "effectiveSubject"
+> & {
+  section: PopulatedSection;
+  classroom: PopulatedClassroom;
+  effectiveTeacher: TeacherDoc;
+  effectiveSubject: SubjectDoc;
+};
+
+/**
+ * Attendance record with references populated
+ */
+export type PopulatedAttendanceRecord = Omit<
+  AttendanceRecordDoc,
+  "attendanceSession" | "student" | "scanEvent"
+> & {
+  attendanceSession: AttendanceSessionDoc;
+  student: StudentDoc;
+  scanEvent: ScanEventDoc;
+};
+
+/**
+ * Teacher presence with teacher and classroom populated
+ */
+export type PopulatedTeacherPresenceRecord = Omit<
+  TeacherPresenceRecordDoc,
+  "teacher" | "classroom"
+> & {
+  teacher: TeacherDoc;
+  classroom: PopulatedClassroom;
+};
+
+/**
+ * Notice with author and sections populated
+ */
+export type PopulatedNotice = Omit<NoticeDoc, "author" | "targetSections"> & {
+  author: UserDoc;
+  targetSections: PopulatedSection[];
+};

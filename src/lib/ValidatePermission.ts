@@ -32,3 +32,7 @@ export async function requireTeacher() {
 export async function requireStudent() {
   return requireAuth([DbUserRole.student]);
 }
+
+export async function requireSmartboard() {
+  return requireAuth(["smartboard"]);
+}

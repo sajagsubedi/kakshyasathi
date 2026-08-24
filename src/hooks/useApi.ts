@@ -1,6 +1,7 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { adminRequest } from "@/hooks/admin/http";
+import { UserRole } from "@/types";
 
 // ---------- Shared types ----------
 
@@ -93,7 +94,11 @@ export interface PresenceRecord {
 }
 
 export interface LookupData {
-  sections: Array<{ _id: string; name: string; class?: { name?: string; grade?: number } }>;
+  sections: Array<{
+    _id: string;
+    name: string;
+    class?: { name?: string; grade?: number };
+  }>;
   subjects: Array<{ _id: string; name: string; code: string }>;
   teachers: Array<{ _id: string; user?: { name?: string; username?: string } }>;
   periods: Array<{
@@ -112,7 +117,9 @@ export interface LookupData {
   getSectionName: (id: string) => string;
   getSubjectName: (id: string) => string;
   getTeacherName: (id: string) => string;
-  getPeriod: (id: string) => { periodNumber: number; startTime: string; endTime: string } | undefined;
+  getPeriod: (
+    id: string,
+  ) => { periodNumber: number; startTime: string; endTime: string } | undefined;
 }
 
 // ---------- Student hooks ----------
@@ -270,3 +277,103 @@ export {
   useAdminSectionDetail,
   type AdminSectionDetail,
 } from "./admin/useSections";
+
+// ---------- Smartboard hooks ----------
+
+export interface SmartboardClassroomData {
+  sectionName: string;
+  currentPeriod?: {
+    periodNumber: number;
+    subjectName: string;
+    teacherName: string;
+    isSubstitute: boolean;
+    startTime: string;
+    endTime: string;
+  };
+  nextPeriod?: {
+    periodNumber: number;
+    subjectName: string;
+    teacherName: string;
+    startTime: string;
+    endTime: string;
+  };
+  attendanceSummary?: {
+    present: number;
+    total: number;
+  };
+}
+
+export interface SmartboardAttendanceData {
+  id: string;
+  studentId: string;
+  status: string;
+  scannedAt?: string;
+}
+
+export function useSmartboardClassroom() {
+  return useQuery({
+    queryKey: ["smartboard", "classroom"],
+    queryFn: async () => {
+      return adminRequest<SmartboardClassroomData>(
+        axios.get("/api/smartboard/classroom"),
+        "Failed to load classroom data.",
+      );
+    },
+    refetchInterval: 15000, // Refresh every 15 seconds for real-time updates
+  });
+}
+
+export function useSmartboardNotices() {
+  return useQuery({
+    queryKey: ["smartboard", "notices"],
+    queryFn: async () => {
+      return adminRequest<NoticeDto[]>(
+        axios.get("/api/smartboard/notices"),
+        "Failed to load notices.",
+      );
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+}
+
+export function useSmartboardAttendance() {
+  return useQuery({
+    queryKey: ["smartboard", "attendance"],
+    queryFn: async () => {
+      return adminRequest<SmartboardAttendanceData[]>(
+        axios.get("/api/smartboard/attendance"),
+        "Failed to load attendance.",
+      );
+    },
+    refetchInterval: 10000, // Refresh every 10 seconds for real-time updates
+  });
+}
+
+export function useSmartboardTimetable() {
+  return useQuery({
+    queryKey: ["smartboard", "timetable"],
+    queryFn: async () => {
+      return adminRequest<TimetableEntryDto[]>(
+        axios.get("/api/smartboard/timetable"),
+        "Failed to load timetable.",
+      );
+    },
+  });
+}
+
+export function useBarcodeScan() {
+  return useMutation({
+    mutationFn: async ({
+      barcode,
+      role,
+    }: {
+      barcode: string;
+      role: UserRole;
+    }) => {
+      return adminRequest(
+        axios.post("/api/smartboard/scan", { barcode }),
+        "Scan failed",
+      );
+    },
+  });
+}

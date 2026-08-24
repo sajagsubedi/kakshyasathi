@@ -9,10 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useSmartboardAttendance, useBarcodeScan, useSharedLookup } from '@/hooks/useApi';
+import { UserRole } from '@/types';
 
 export default function SmartBoardAttendancePage() {
   const [barcode, setBarcode] = React.useState('');
-  const [scanRole, setScanRole] = React.useState<'STUDENT' | 'TEACHER'>('STUDENT');
+  const [scanRole, setScanRole] = React.useState<UserRole>(UserRole.student);
   const { data: attendance = [] } = useSmartboardAttendance();
   const scan = useBarcodeScan();
   const { data: lookup } = useSharedLookup();
@@ -23,7 +24,7 @@ export default function SmartBoardAttendancePage() {
     if (!barcode.trim()) return;
     try {
       await scan.mutateAsync({ barcode: barcode.trim(), role: scanRole });
-      toast.success(`${scanRole === 'STUDENT' ? 'Attendance' : 'Presence'} recorded`);
+      toast.success(`${scanRole === 'student' ? 'Attendance' : 'Presence'} recorded`);
       setBarcode('');
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Scan failed');
@@ -39,15 +40,15 @@ export default function SmartBoardAttendancePage() {
           <form onSubmit={handleScan} className="flex flex-col gap-3 sm:flex-row">
             <Input value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Scan or enter barcode..." className="flex-1 font-mono" autoFocus />
             <div className="flex gap-2">
-              <Button type="button" variant={scanRole === 'STUDENT' ? 'default' : 'outline'} onClick={() => setScanRole('STUDENT')}>Student</Button>
-              <Button type="button" variant={scanRole === 'TEACHER' ? 'default' : 'outline'} onClick={() => setScanRole('TEACHER')}>Teacher</Button>
+              <Button type="button" variant={scanRole === 'student' ? 'default' : 'outline'} onClick={() => setScanRole(UserRole.student)}>Student</Button>
+              <Button type="button" variant={scanRole === 'teacher' ? 'default' : 'outline'} onClick={() => setScanRole(UserRole.teacher)}>Teacher</Button>
               <Button type="submit" disabled={scan.isPending}><ScanLine className="mr-2 h-4 w-4" />Scan</Button>
             </div>
           </form>
         </CardContent>
       </Card>
       <Card>
-        <CardHeader><CardTitle className="text-base">Today's Attendance</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">Today&nbsp;s Attendance</CardTitle></CardHeader>
         <CardContent className="space-y-2">
           {attendance.map((record) => {
             const student = users.find((u) => u.id === record.studentId);

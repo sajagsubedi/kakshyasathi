@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CheckCircle2,
   LoaderCircle,
+  Monitor,
   ShieldCheck,
   Sparkles,
 } from "lucide-react";
@@ -41,7 +42,7 @@ function SignInForm() {
   const callbackUrl = searchParams.get("callbackUrl") || "/";
 
   useEffect(() => {
-    console.log("refresh router")
+    console.log("refresh router");
     router.refresh();
   }, [router]);
 
@@ -190,8 +191,8 @@ function SignInForm() {
                 "
               >
                 Kakshyasathi brings attendance, schedules, teachers,
-                announcements and smart classroom information together
-                in one simple platform.
+                announcements and smart classroom information together in one
+                simple platform.
               </p>
 
               <div className="mt-6 space-y-2.5">
@@ -410,6 +411,60 @@ function SignInForm() {
                   )}
                 </Button>
               </form>
+              {/* Smart Board Setup */}
+              <div className="mt-5">
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute inset-x-0 h-px bg-border" />
+                  <span className="relative bg-card px-3 text-[11px] font-medium uppercase tracking-wider text-muted-foreground">
+                    Device access
+                  </span>
+                </div>
+
+                <Link
+                  href="/setup"
+                  className="
+      group mt-4 flex w-full items-center gap-3
+      rounded-xl border border-border
+      bg-muted/30 p-3.5
+      transition-all duration-200
+      hover:border-primary/30
+      hover:bg-primary/[0.04]
+      hover:shadow-sm
+    "
+                >
+                  <div
+                    className="
+        flex h-9 w-9 shrink-0 items-center justify-center
+        rounded-lg
+        bg-primary/10
+        text-primary
+        transition-colors
+        group-hover:bg-primary/15
+      "
+                  >
+                    <Monitor className="h-4 w-4" />
+                  </div>
+
+                  <div className="min-w-0 flex-1 text-left">
+                    <p className="text-sm font-semibold text-foreground">
+                      Set up a Smart Board
+                    </p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      Configure this device for classroom use
+                    </p>
+                  </div>
+
+                  <ArrowRight
+                    className="
+        h-4 w-4 shrink-0
+        text-muted-foreground
+        transition-all duration-200
+        group-hover:translate-x-0.5
+        group-hover:text-primary
+      "
+                  />
+                </Link>
+              </div>
 
               <div className="mt-6 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <ShieldCheck className="h-4 w-4 shrink-0 text-primary" />

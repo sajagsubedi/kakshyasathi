@@ -4,11 +4,17 @@ import { ZodError } from "zod";
 
 import { signInSchema } from "@/schemas/signInSchema";
 import UserModel from "@/models/User.model";
-import { PersonGender, UserRole } from "@/types";
+import SmartBoardModel from "@/models/SmartBoard.model";
+import { DeviceStatus, PersonGender, UserRole } from "@/types";
+import type { PopulatedClassroom } from "@/types";
+
 import connectDb from "./connectDB";
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
+    // ============================================================
+    // USER LOGIN
+    // ============================================================
     Credentials({
       id: "credentials",
       name: "Credentials",
@@ -66,7 +72,107 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         }
       },
     }),
+
+    // ============================================================
+    // SMARTBOARD LOGIN
+    // ============================================================
+    Credentials({
+      id: "smartboard",
+      name: "SmartBoard",
+
+      credentials: {
+        deviceKey: {
+          label: "Device Key",
+          type: "text",
+        },
+      },
+
+      async authorize(credentials) {
+        console.log("Till here ");
+        try {
+          await connectDb();
+
+          const deviceKey =
+            typeof credentials?.deviceKey === "string"
+              ? credentials.deviceKey.trim()
+              : "";
+
+          if (!deviceKey) {
+            return null;
+          }
+          console.log("Till here");
+
+          const smartBoard = (await SmartBoardModel.findOne({
+            deviceKey,
+          }).populate({
+            path: "classroom",
+            populate: {
+              path: "section",
+              populate: {
+                path: "class",
+                select: "name grade",
+              },
+            },
+          })) as
+            | (PopulatedClassroom extends never
+                ? never
+                : Omit<import("@/types").SmartBoardDoc, "classroom"> & {
+                    classroom: PopulatedClassroom;
+                  })
+            | null;
+
+          if (!smartBoard) {
+            return null;
+          }
+
+          // Make sure the populated relationship exists.
+          if (
+            !smartBoard.classroom ||
+            !smartBoard.classroom.section ||
+            !smartBoard.classroom.section.class
+          ) {
+            console.error(
+              `SmartBoard ${smartBoard._id} has an invalid classroom relationship`,
+            );
+
+            return null;
+          }
+
+          await SmartBoardModel.updateOne(
+            { _id: smartBoard._id },
+            {
+              $set: {
+                lastSeenAt: new Date(),
+                status: DeviceStatus.online,
+              },
+            },
+          );
+
+          return {
+            _id: smartBoard._id.toString(),
+
+            name: `Smart Board - ${smartBoard.classroom.roomNumber}`,
+
+            deviceKey: smartBoard.deviceKey,
+
+            role: UserRole.smartboard,
+
+            classroomId: smartBoard.classroom._id.toString(),
+
+            sectionId: smartBoard.classroom.section._id.toString(),
+          };
+        } catch (error) {
+          console.error("SmartBoard authorize error:", error);
+
+          return null;
+        }
+      },
+    }),
   ],
+
+  // ============================================================
+  // CALLBACKS
+  // ============================================================
 
   callbacks: {
     async jwt({ token, user }) {
@@ -77,6 +183,10 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         token.email = user.email;
         token.gender = user.gender;
         token.role = user.role;
+
+        token.deviceKey = user.deviceKey;
+        token.classroomId = user.classroomId;
+        token.sectionId = user.sectionId;
       }
 
       return token;
@@ -90,14 +200,22 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         session.user.email = token.email as string;
         session.user.gender = token.gender as PersonGender;
         session.user.role = token.role as UserRole;
+
+        session.user.deviceKey = token.deviceKey as string | undefined;
+        session.user.classroomId = token.classroomId as string | undefined;
+        session.user.sectionId = token.sectionId as string | undefined;
       }
+
       return session;
     },
   },
 
+  // ============================================================
+  // SESSION
+  // ============================================================
+
   session: {
     strategy: "jwt",
-
     maxAge: 30 * 24 * 60 * 60,
   },
 

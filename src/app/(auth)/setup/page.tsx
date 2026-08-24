@@ -12,25 +12,29 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 
 export default function SmartBoardSetupPage() {
   const router = useRouter();
-  const [deviceId, setDeviceId] = useState('');
-  const [password, setPassword] = useState('');
+  const [deviceKey, setDeviceKey] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    const result = await signIn('smartboard', {
-      deviceId,
-      password,
+    console.log(deviceKey)
+
+    const result = await signIn("smartboard", {
+      deviceKey,
       redirect: false,
     });
-    setLoading(false);
 
     if (result?.error) {
-      toast.error('Invalid device credentials');
-    } else {
-      toast.success('Smart board connected');
-      router.push('/smartboard/dashboard');
+      toast.error("SmartBoard login failed");
+      setLoading(false)
+      return;
+    }
+
+    if (result?.ok) {
+      setLoading(false)
+      toast.success("Smartboard connected successfully!")
+      router.replace("/smartboard/dashboard");
     }
   };
 
@@ -47,12 +51,8 @@ export default function SmartBoardSetupPage() {
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="deviceId">Device ID</Label>
-              <Input id="deviceId" value={deviceId} onChange={(e) => setDeviceId(e.target.value)} placeholder="SB-001" className="mt-1.5 font-mono uppercase" />
-            </div>
-            <div>
-              <Label htmlFor="password">Password</Label>
-              <Input id="password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5" />
+              <Label htmlFor="deviceKey">Device Key</Label>
+              <Input id="deviceKey" value={deviceKey} onChange={(e) => setDeviceKey(e.target.value)} placeholder="Enter your device key" className="mt-1.5 font-mono" />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <><LoaderCircle className="mr-2 h-4 w-4 animate-spin" />Connecting...</> : <>Connect<ArrowRight className="ml-2 h-4 w-4" /></>}
