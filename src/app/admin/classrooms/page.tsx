@@ -220,10 +220,25 @@ export default function AdminClassroomsPage() {
             </div>
             <div>
               <Label>Home section</Label>
-              <Select value={form.section} onValueChange={(value) => setForm((prev) => ({ ...prev, section: value ?? "" }))}>
+              <Select
+                value={form.section}
+                onValueChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    section: value ?? "",
+                  }))
+                }
+              >
                 <SelectTrigger className="mt-1.5 w-full">
-                  <SelectValue placeholder="Select section" />
+                  <SelectValue placeholder="Select section">
+                    {form.section
+                      ? sectionLabel(
+                        sections.find((section) => section._id === form.section)
+                      )
+                      : "Select section"}
+                  </SelectValue>
                 </SelectTrigger>
+
                 <SelectContent>
                   {sections.map((section) => (
                     <SelectItem key={section._id} value={section._id}>

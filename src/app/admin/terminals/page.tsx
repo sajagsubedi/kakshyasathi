@@ -191,11 +191,30 @@ export default function AdminTerminalsPage() {
             </div>
             <div>
               <Label>Classroom</Label>
-              <Select value={form.classroom} onValueChange={(value) => setForm((prev) => ({ ...prev, classroom: value ?? "" }))}>
-                <SelectTrigger className="mt-1.5 w-full"><SelectValue placeholder="Select classroom" /></SelectTrigger>
+              <Select
+                value={form.classroom}
+                onValueChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    classroom: value ?? "",
+                  }))
+                }
+              >
+                <SelectTrigger className="mt-1.5 w-full">
+                  <SelectValue placeholder="Select classroom">
+                    {form.classroom
+                      ? classroomLabel(
+                        classrooms.find((room) => room._id === form.classroom)
+                      )
+                      : "Select classroom"}
+                  </SelectValue>
+                </SelectTrigger>
+
                 <SelectContent>
                   {classrooms.map((room) => (
-                    <SelectItem key={room._id} value={room._id}>{classroomLabel(room)}</SelectItem>
+                    <SelectItem key={room._id} value={room._id}>
+                      {classroomLabel(room)}
+                    </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
