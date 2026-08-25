@@ -8,6 +8,7 @@ import SectionModel from "@/models/Section.model";
 import SubjectModel from "@/models/Subject.model";
 import TeacherModel from "@/models/Teacher.model";
 import ClassroomModel from "@/models/Classroom.model";
+import AcademicYearModel from "@/models/AcademicYear.model";
 import { parseObjectId } from "@/lib/api/parseId";
 import { parseTime } from "@/lib/api/time";
 import { DayOfWeek } from "@/types";
@@ -58,7 +59,6 @@ export const POST = withHandler(async (req: NextRequest) => {
     periodNumber,
     subject,
     teacher,
-    classroom,
     customStartTime,
     customEndTime,
   } = body;
@@ -72,25 +72,31 @@ export const POST = withHandler(async (req: NextRequest) => {
   }
   if (!subject) throw new Error("Subject is required");
   if (!teacher) throw new Error("Teacher is required");
-  if (!classroom) throw new Error("Classroom is required");
+
+  // Check if the selected day is a holiday
+  const activeAcademicYear = await AcademicYearModel.findOne({ isActive: true });
+  if (activeAcademicYear && activeAcademicYear.weeklyOffDays) {
+    if (activeAcademicYear.weeklyOffDays.includes(dayOfWeek)) {
+      throw new Error(`Cannot create timetable entry for ${dayOfWeek} as it's a holiday in the active academic year`);
+    }
+  }
 
   parseObjectId(section, "section");
   parseObjectId(subject, "subject");
   parseObjectId(teacher, "teacher");
-  parseObjectId(classroom, "classroom");
 
   const [sectionExists, subjectExists, teacherExists, classroomExists] =
     await Promise.all([
       SectionModel.findById(section),
       SubjectModel.findById(subject),
       TeacherModel.findById(teacher),
-      ClassroomModel.findById(classroom),
+      ClassroomModel.findOne({ section }),
     ]);
 
   if (!sectionExists) throw new Error("Section not found");
   if (!subjectExists) throw new Error("Subject not found");
   if (!teacherExists) throw new Error("Teacher not found");
-  if (!classroomExists) throw new Error("Classroom not found");
+  if (!classroomExists) throw new Error("Classroom not found for this section");
 
   const existing = await TimetableModel.findOne({
     section,
@@ -107,7 +113,7 @@ export const POST = withHandler(async (req: NextRequest) => {
     periodNumber,
     subject,
     teacher,
-    classroom,
+    classroom: classroomExists._id,
   };
 
   if (customStartTime) {

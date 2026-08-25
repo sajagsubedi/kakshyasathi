@@ -5,6 +5,8 @@ import connectDb from "@/lib/connectDB";
 import TeacherModel from "@/models/Teacher.model";
 import TimetableModel from "@/models/Timetable.model";
 import PeriodModel from "@/models/Period.model";
+import AcademicYearModel from "@/models/AcademicYear.model";
+import { DayOfWeek } from "@/types";
 
 const dayMap: Record<string, number> = {
   sunday: 0,
@@ -25,8 +27,15 @@ export const GET = withHandler(async () => {
     return ApiResponse([], "Teacher profile not found");
   }
 
+  // Get active academic year for weekly off days
+  const activeYear = await AcademicYearModel.findOne({ isActive: true });
+  const weeklyOffDays = activeYear?.weeklyOffDays || [DayOfWeek.sunday];
+
   const [timetable, globalPeriods] = await Promise.all([
-    TimetableModel.find({ teacher: teacher._id })
+    TimetableModel.find({ 
+      teacher: teacher._id,
+      dayOfWeek: { $nin: weeklyOffDays },
+    })
       .populate("subject", "name code")
       .populate({
         path: "section",
@@ -40,7 +49,7 @@ export const GET = withHandler(async () => {
 
   const globalPeriodMap = new Map<number, { startTime: string; endTime: string }>();
   globalPeriods.forEach((p) => {
-    if (!globalPeriodMap.has(p.periodNumber)) {
+    if (p.slotType === "period" && p.periodNumber && !globalPeriodMap.has(p.periodNumber)) {
       globalPeriodMap.set(p.periodNumber, {
         startTime: p.startTime,
         endTime: p.endTime,

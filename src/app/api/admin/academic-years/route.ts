@@ -24,7 +24,7 @@ export const POST = withHandler(async (req: NextRequest) => {
 
   const body = await req.json();
 
-  const { label, startDate, endDate } = body;
+  const { label, startDate, endDate, weeklyOffDays } = body;
 
   if (!label || !startDate || !endDate) {
     throw new Error("label, startDate and endDate are required");
@@ -57,6 +57,7 @@ export const POST = withHandler(async (req: NextRequest) => {
     startDate: parsedStartDate,
     endDate: parsedEndDate,
     isActive: false,
+    weeklyOffDays: weeklyOffDays || ["sunday"],
   });
 
   return ApiResponse(academicYear, "Academic year created successfully", 201);

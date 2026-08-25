@@ -9,6 +9,7 @@ import TeacherPresenceModel from "@/models/TeacherPresence.model";
 import NoticeModel from "@/models/Notice.model";
 import SectionModel from "@/models/Section.model";
 import StudentModel from "@/models/Student.model";
+import AcademicYearModel from "@/models/AcademicYear.model";
 import { DayOfWeek, NoticeTargetType } from "@/types";
 
 const dayMap: Record<string, number> = {
@@ -37,8 +38,15 @@ export const GET = withHandler(async () => {
   const assignedSectionIds = (teacher.assignedSections ?? []).map((s) => String(s));
   const dayIdx = new Date().getDay();
 
+  // Get active academic year for weekly off days
+  const activeYear = await AcademicYearModel.findOne({ isActive: true });
+  const weeklyOffDays = activeYear?.weeklyOffDays || [DayOfWeek.sunday];
+
   const [timetable, presence, notices, assignedSections] = await Promise.all([
-    TimetableModel.find({ teacher: teacher._id })
+    TimetableModel.find({ 
+      teacher: teacher._id,
+      dayOfWeek: { $nin: weeklyOffDays },
+    })
       .populate("subject", "name code")
       .populate({
         path: "section",
@@ -74,7 +82,7 @@ export const GET = withHandler(async () => {
   const globalPeriods = await PeriodModel.find({}).lean();
   const globalPeriodMap = new Map<number, { startTime: string; endTime: string }>();
   globalPeriods.forEach((p) => {
-    if (!globalPeriodMap.has(p.periodNumber)) {
+    if (p.slotType === "period" && p.periodNumber && !globalPeriodMap.has(p.periodNumber)) {
       globalPeriodMap.set(p.periodNumber, {
         startTime: p.startTime,
         endTime: p.endTime,

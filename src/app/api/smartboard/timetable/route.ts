@@ -9,6 +9,7 @@ import TimetableModel from "@/models/Timetable.model";
 import SubstitutionModel from "@/models/Substitution.model";
 import PeriodModel from "@/models/Period.model";
 import AcademicYearModel from "@/models/AcademicYear.model";
+import HolidayModel from "@/models/Holiday.model";
 import { DayOfWeek } from "@/types";
 
 export const GET = withHandler(async (req: NextRequest) => {
@@ -34,14 +35,27 @@ export const GET = withHandler(async (req: NextRequest) => {
   }
 
   // Get global timetable for timing
-  const globalPeriods = await PeriodModel.find({ academicYear: activeYear._id }).sort({ periodNumber: 1 });
+  const globalPeriods = await PeriodModel.find({ academicYear: activeYear._id }).sort({ order: 1 });
 
-  // Get all timetable entries for this section
+  // Get holidays for the active academic year
+  const holidays = await HolidayModel.find({ academicYear: activeYear._id }).lean();
+  const holidayDates = new Set(
+    holidays.map((h) => new Date(h.date).toISOString().split('T')[0])
+  );
+
+  // Filter out weekly off days from timetable
+  const weeklyOffDays = activeYear.weeklyOffDays || [DayOfWeek.sunday];
+  
+  // Get all timetable entries for this section, excluding weekly off days
   const timetableEntries = await TimetableModel.find({
     section: sectionId,
+    dayOfWeek: { $nin: weeklyOffDays },
   })
     .populate("subject")
-    .populate("teacher")
+    .populate({
+      path: "teacher",
+      populate: { path: "user" }
+    })
     .populate("classroom")
     .sort({ dayOfWeek: 1, periodNumber: 1 });
 
@@ -51,7 +65,13 @@ export const GET = withHandler(async (req: NextRequest) => {
   const substitutions = await SubstitutionModel.find({
     section: sectionId,
     date: today,
-  }).populate("originalTeacher substituteTeacher");
+  }).populate({
+    path: "originalTeacher",
+    populate: { path: "user" }
+  }).populate({
+    path: "substituteTeacher",
+    populate: { path: "user" }
+  });
 
   // Helper function to get period timing
   const getPeriodTiming = (entry: any) => {
@@ -62,7 +82,7 @@ export const GET = withHandler(async (req: NextRequest) => {
         isCustomTiming: true,
       };
     }
-    const globalPeriod = globalPeriods.find((p) => p.periodNumber === entry.periodNumber);
+    const globalPeriod = globalPeriods.find((p) => p.slotType === "period" && p.periodNumber === entry.periodNumber);
     return {
       startTime: globalPeriod?.startTime || "00:00",
       endTime: globalPeriod?.endTime || "00:00",
@@ -79,11 +99,11 @@ export const GET = withHandler(async (req: NextRequest) => {
       (s) => s.periodNumber === entry.periodNumber
     );
 
-    let teacherName = entry.teacher?.name || "Unknown";
+    let teacherName = (entry.teacher as any)?.user?.name || "Unknown";
     let teacherId = entry.teacher?._id?.toString();
 
     if (substitution) {
-      teacherName = substitution.substituteTeacher?.name || teacherName;
+      teacherName = (substitution.substituteTeacher as any)?.user?.name || teacherName;
       teacherId = substitution.substituteTeacher?._id?.toString();
     }
 
@@ -98,7 +118,7 @@ export const GET = withHandler(async (req: NextRequest) => {
       teacherId,
       teacherName,
       sectionId: sectionId.toString(),
-      className: classroom.section?.class?.name,
+      className: (classroom.section as any)?.class?.name,
       classroomId: entry.classroom?._id?.toString(),
       roomNumber: entry.classroom?.roomNumber,
       startTime: timing.startTime,
@@ -110,7 +130,11 @@ export const GET = withHandler(async (req: NextRequest) => {
   });
 
   return ApiResponse(
-    formattedTimetable,
+    {
+      timetable: formattedTimetable,
+      holidays: Array.from(holidayDates),
+      weeklyOffDays: weeklyOffDays,
+    },
     "Timetable fetched successfully"
   );
 });

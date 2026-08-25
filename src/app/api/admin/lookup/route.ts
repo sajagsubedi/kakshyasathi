@@ -19,7 +19,7 @@ export const GET = withHandler(async () => {
     TeacherModel.find({})
       .populate("user", "name username")
       .lean(),
-    PeriodModel.find({}).sort({ periodNumber: 1 }).lean(),
+    PeriodModel.find({}).sort({ order: 1 }).lean(),
   ]);
 
   const getSectionName = (id: string) => {
@@ -40,7 +40,9 @@ export const GET = withHandler(async () => {
   };
 
   const getPeriod = (id: string) =>
-    periods.find((p) => String(p._id) === id) as
+    periods
+      .filter((p) => p.slotType === "period")
+      .find((p) => String(p._id) === id) as
       | { _id: string; periodNumber: number; startTime: string; endTime: string }
       | undefined;
 
@@ -60,12 +62,14 @@ export const GET = withHandler(async () => {
         _id: String(t._id),
         user: t.user,
       })),
-      periods: periods.map((p) => ({
-        _id: String(p._id),
-        periodNumber: p.periodNumber,
-        startTime: p.startTime,
-        endTime: p.endTime,
-      })),
+      periods: periods
+        .filter((p) => p.slotType === "period")
+        .map((p) => ({
+          _id: String(p._id),
+          periodNumber: p.periodNumber,
+          startTime: p.startTime,
+          endTime: p.endTime,
+        })),
       getSectionName,
       getTeacherName,
       getSubjectName,

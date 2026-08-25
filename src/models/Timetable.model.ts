@@ -15,7 +15,6 @@ const timetableSchema = new Schema<SectionTimetableDoc>(
     classroom: {
       type: Schema.Types.ObjectId,
       ref: "Classroom",
-      required: true,
     },
     customStartTime: { type: String, trim: true }, // e.g. "12:10"
     customEndTime: { type: String, trim: true }, // e.g. "13:10"

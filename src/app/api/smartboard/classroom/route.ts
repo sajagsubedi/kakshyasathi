@@ -45,7 +45,10 @@ export const GET = withHandler(async (req: NextRequest) => {
     dayOfWeek: currentDay,
   })
     .populate("subject")
-    .populate("teacher")
+    .populate({
+      path: "teacher",
+      populate: { path: "user" }
+    })
     .populate("classroom")
     .sort({ periodNumber: 1 });
 
@@ -56,7 +59,7 @@ export const GET = withHandler(async (req: NextRequest) => {
   }
 
   // Get global timetable for timing fallback
-  const globalPeriods = await PeriodModel.find({ academicYear: activeYear._id }).sort({ periodNumber: 1 });
+  const globalPeriods = await PeriodModel.find({ academicYear: activeYear._id }).sort({ order: 1 });
 
   // Get today's substitutions
   const today = new Date();
@@ -64,7 +67,13 @@ export const GET = withHandler(async (req: NextRequest) => {
   const substitutions = await SubstitutionModel.find({
     section: section._id,
     date: today,
-  }).populate("originalTeacher substituteTeacher");
+  }).populate({
+    path: "originalTeacher",
+    populate: { path: "user" }
+  }).populate({
+    path: "substituteTeacher",
+    populate: { path: "user" }
+  });
 
   // Helper function to get period timing
   const getPeriodTiming = (entry: any) => {
@@ -74,7 +83,7 @@ export const GET = withHandler(async (req: NextRequest) => {
         endTime: entry.customEndTime,
       };
     }
-    const globalPeriod = globalPeriods.find((p) => p.periodNumber === entry.periodNumber);
+    const globalPeriod = globalPeriods.find((p) => p.slotType === "period" && p.periodNumber === entry.periodNumber);
     return {
       startTime: globalPeriod?.startTime || "00:00",
       endTime: globalPeriod?.endTime || "00:00",
@@ -103,17 +112,17 @@ export const GET = withHandler(async (req: NextRequest) => {
         (s) => s.periodNumber === entry.periodNumber
       );
 
-      let teacherName = entry.teacher?.name || "Unknown";
+      let teacherName = (entry.teacher as any)?.user?.name || "Unknown";
       let isSubstitute = false;
 
       if (substitution) {
-        teacherName = substitution.substituteTeacher?.name || teacherName;
+        teacherName = (substitution.substituteTeacher as any)?.user?.name || teacherName;
         isSubstitute = true;
       }
 
       currentPeriod = {
         periodNumber: entry.periodNumber,
-        subjectName: entry.subject?.name || "Unknown",
+        subjectName: (entry.subject as any)?.name || "Unknown",
         teacherName,
         isSubstitute,
         startTime: timing.startTime,
@@ -127,15 +136,15 @@ export const GET = withHandler(async (req: NextRequest) => {
         (s) => s.periodNumber === entry.periodNumber
       );
 
-      let teacherName = entry.teacher?.name || "Unknown";
+      let teacherName = (entry.teacher as any)?.user?.name || "Unknown";
 
       if (substitution) {
-        teacherName = substitution.substituteTeacher?.name || teacherName;
+        teacherName = (substitution.substituteTeacher as any)?.user?.name || teacherName;
       }
 
       nextPeriod = {
         periodNumber: entry.periodNumber,
-        subjectName: entry.subject?.name || "Unknown",
+        subjectName: (entry.subject as any)?.name || "Unknown",
         teacherName,
         startTime: timing.startTime,
         endTime: timing.endTime,
@@ -168,7 +177,7 @@ export const GET = withHandler(async (req: NextRequest) => {
 
   return ApiResponse(
     {
-      sectionName: `${section.class?.name || ""} - ${section.name}`,
+      sectionName: `${(section as any).class?.name || ""} - ${section.name}`,
       currentPeriod,
       nextPeriod,
       attendanceSummary,

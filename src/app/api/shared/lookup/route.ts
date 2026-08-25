@@ -21,7 +21,7 @@ export const GET = withHandler(async () => {
       .populate({ path: "class", select: "name grade" })
       .lean(),
     SubjectModel.find({}).lean(),
-    PeriodModel.find({}).sort({ periodNumber: 1 }).lean(),
+    PeriodModel.find({}).sort({ order: 1 }).lean(),
   ]);
 
   const sectionMap = new Map(
@@ -43,10 +43,12 @@ export const GET = withHandler(async () => {
   );
 
   const periodMap = new Map(
-    periods.map((p) => [
-      String(p._id),
-      { _id: String(p._id), periodNumber: p.periodNumber, startTime: p.startTime, endTime: p.endTime },
-    ]),
+    periods
+      .filter((p) => p.slotType === "period")
+      .map((p) => [
+        String(p._id),
+        { _id: String(p._id), periodNumber: p.periodNumber, startTime: p.startTime, endTime: p.endTime },
+      ]),
   );
 
   const teachers = await TeacherModel.find({})

@@ -37,7 +37,7 @@ import { useAdminPeriods, type PeriodItem } from "@/hooks/admin/usePeriods";
 import { useAdminSections } from "@/hooks/admin/useSections";
 import { useAdminSubjects } from "@/hooks/admin/useSubjects";
 import { useAdminTeachers } from "@/hooks/admin/useTeachers";
-import { useAdminClassrooms } from "@/hooks/admin/useClassrooms";
+import { useAdminAcademicYears } from "@/hooks/admin/useAcademicYears";
 import { DayOfWeek } from "@/types";
 import { sectionLabel, refId, teacherName, classroomLabel } from "@/lib/adminDisplay";
 
@@ -69,6 +69,7 @@ function subjectNameOf(sub: TimetableEntry["subject"]): string {
 export default function AdminTimetablePage() {
   const { data: sectionsData } = useAdminSections({ limit: 100 });
   const sections = sectionsData?.items ?? [];
+  const { data: academicYears } = useAdminAcademicYears();
 
   const [selectedSection, setSelectedSection] = React.useState<string>("");
   React.useEffect(() => {
@@ -88,8 +89,17 @@ export default function AdminTimetablePage() {
   const subjects = subjectsData?.items ?? [];
   const { data: teachersData } = useAdminTeachers(100);
   const teachers = teachersData?.items ?? [];
-  const { data: classroomsData } = useAdminClassrooms({ limit: 100 });
-  const classrooms = classroomsData?.items ?? [];
+
+  // Get weekly off days from active academic year
+  const weeklyOffDays = React.useMemo(() => {
+    const activeYear = academicYears?.find(ay => ay.isActive);
+    return activeYear?.weeklyOffDays || [];
+  }, [academicYears]);
+
+  // Filter out holiday days from the display
+  const availableDays = React.useMemo(() => {
+    return DAYS.filter(day => !weeklyOffDays.includes(day));
+  }, [weeklyOffDays]);
 
   const resolvedSection = sections.find((s) => s._id === selectedSection);
   const resolvedSectionLabel = resolvedSection
@@ -103,30 +113,30 @@ export default function AdminTimetablePage() {
 
   const [dialogOpen, setDialogOpen] = React.useState(false);
   const [form, setForm] = React.useState<{
+    section: string;
     dayOfWeek: DayOfWeek;
     periodNumber: number;
     subject: string;
     teacher: string;
-    classroom: string;
     customStartTime: string;
     customEndTime: string;
   }>({
-    dayOfWeek: DayOfWeek.sunday,
+    section: selectedSection || "",
+    dayOfWeek: DayOfWeek.monday, // Default to Monday, will be updated when availableDays is computed
     periodNumber: 0,
     subject: "",
     teacher: "",
-    classroom: "",
     customStartTime: "",
     customEndTime: "",
   });
 
   const resetForm = () => {
     setForm({
-      dayOfWeek: DayOfWeek.sunday,
+      section: selectedSection || "",
+      dayOfWeek: availableDays[0] ?? DayOfWeek.sunday,
       periodNumber: periods[0]?.periodNumber ?? 0,
       subject: "",
       teacher: "",
-      classroom: "",
       customStartTime: "",
       customEndTime: "",
     });
@@ -138,22 +148,28 @@ export default function AdminTimetablePage() {
   };
 
   const handleCreate = async () => {
-    if (!selectedSection) {
+    if (!form.section) {
       toast.error("Please select a section first");
       return;
     }
-    if (!form.periodNumber || !form.subject || !form.teacher || !form.classroom) {
+    if (!form.periodNumber || !form.subject || !form.teacher) {
       toast.error("Please fill in all required fields");
       return;
     }
+
+    // Check if the selected day is a holiday
+    if (weeklyOffDays.includes(form.dayOfWeek)) {
+      toast.error(`Cannot add timetable entry for ${DAY_NAMES[form.dayOfWeek]} as it's a holiday`);
+      return;
+    }
+
     try {
       await createEntry.mutateAsync({
-        section: selectedSection,
+        section: form.section,
         dayOfWeek: form.dayOfWeek,
         periodNumber: form.periodNumber,
         subject: form.subject,
         teacher: form.teacher,
-        classroom: form.classroom,
         customStartTime: form.customStartTime.trim() || undefined,
         customEndTime: form.customEndTime.trim() || undefined,
       });
@@ -180,9 +196,16 @@ export default function AdminTimetablePage() {
   };
 
   const periodsSorted = React.useMemo(
-    () => [...periods].sort((a, b) => a.periodNumber - b.periodNumber),
+    () => [...periods].sort((a, b) => a.periodNumber! - b.periodNumber!),
     [periods]
   );
+
+  // Update default day when available days change
+  React.useEffect(() => {
+    if (availableDays.length > 0 && !availableDays.includes(form.dayOfWeek)) {
+      setForm(prev => ({ ...prev, dayOfWeek: availableDays[0] }));
+    }
+  }, [availableDays, form.dayOfWeek]);
 
   return (
     <section>
@@ -193,10 +216,14 @@ export default function AdminTimetablePage() {
           <Button
             onClick={() => {
               resetForm();
+              setForm((f) => ({
+                ...f,
+                section: selectedSection || "",
+              }));
               if (periodsSorted[0]) {
                 setForm((f) => ({
                   ...f,
-                  periodNumber: periodsSorted[0].periodNumber,
+                  periodNumber: periodsSorted[0].periodNumber ?? 0,
                 }));
               }
               setDialogOpen(true);
@@ -215,8 +242,15 @@ export default function AdminTimetablePage() {
           onValueChange={(v) => setSelectedSection(v ?? "")}
         >
           <SelectTrigger className="w-full sm:w-80">
-            <SelectValue placeholder="Select section" />
+            <SelectValue placeholder="Select section">
+              {selectedSection
+                ? sectionLabel(
+                  sections.find((section) => section._id === selectedSection)
+                )
+                : "Select section"}
+            </SelectValue>
           </SelectTrigger>
+
           <SelectContent>
             {sections.map((s) => (
               <SelectItem key={s._id} value={s._id}>
@@ -254,7 +288,7 @@ export default function AdminTimetablePage() {
                 <thead>
                   <tr className="border-b">
                     <th className="p-2 text-left min-w-[120px]">Period</th>
-                    {DAYS.map((d) => (
+                    {availableDays.map((d) => (
                       <th key={d} className="p-2 text-left min-w-[140px]">
                         {DAY_NAMES[d]}
                       </th>
@@ -271,8 +305,8 @@ export default function AdminTimetablePage() {
                           {period.startTime}–{period.endTime}
                         </span>
                       </td>
-                      {DAYS.map((day) => {
-                        const entry = getEntry(day, period.periodNumber);
+                      {availableDays.map((day) => {
+                        const entry = getEntry(day, period.periodNumber!);
                         return (
                           <td key={day} className="p-2 align-top">
                             {entry ? (
@@ -322,10 +356,30 @@ export default function AdminTimetablePage() {
           <DialogHeader>
             <DialogTitle>Add Timetable Entry</DialogTitle>
             <DialogDescription>
-              Create a new timetable entry for the selected section.
+              Create a new timetable entry. Classroom will be automatically assigned based on the section.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
+            <div>
+              <Label htmlFor="tt-section">Section</Label>
+              <Select
+                value={form.section}
+                onValueChange={(v) => {
+                  setForm({ ...form, section: v ?? "" });
+                }}
+              >
+                <SelectTrigger id="tt-section" className="mt-1.5">
+                  <SelectValue placeholder="Select section" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sections.map((s) => (
+                    <SelectItem key={s._id} value={s._id}>
+                      {sectionLabel(s)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label htmlFor="tt-day">Day of Week</Label>
               <Select
@@ -338,7 +392,7 @@ export default function AdminTimetablePage() {
                   <SelectValue placeholder="Select day" />
                 </SelectTrigger>
                 <SelectContent>
-                  {DAYS.map((d) => (
+                  {availableDays.map((d) => (
                     <SelectItem key={d} value={d}>
                       {DAY_NAMES[d]}
                     </SelectItem>
@@ -400,24 +454,6 @@ export default function AdminTimetablePage() {
                   {teachers.map((t) => (
                     <SelectItem key={t._id} value={t._id}>
                       {t.user.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="tt-classroom">Classroom</Label>
-              <Select
-                value={form.classroom}
-                onValueChange={(v) => setForm({ ...form, classroom: v ?? "" })}
-              >
-                <SelectTrigger id="tt-classroom" className="mt-1.5">
-                  <SelectValue placeholder="Select classroom" />
-                </SelectTrigger>
-                <SelectContent>
-                  {classrooms.map((c) => (
-                    <SelectItem key={c._id} value={c._id}>
-                      {classroomLabel(c)}
                     </SelectItem>
                   ))}
                 </SelectContent>

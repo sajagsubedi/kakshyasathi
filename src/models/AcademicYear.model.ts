@@ -1,17 +1,20 @@
 import mongoose, { Schema } from "mongoose";
-import type { AcademicYearDoc } from "@/types";
+import { AcademicYearDoc, DayOfWeek } from "@/types";
 
 const academicYearSchema = new Schema<AcademicYearDoc>(
   {
-    label: { type: String, required: true, unique: true, trim: true },
+    label: { type: String, required: true },
     startDate: { type: Date, required: true },
     endDate: { type: Date, required: true },
     isActive: { type: Boolean, default: false },
+    weeklyOffDays: {
+      type: [String],
+      enum: Object.values(DayOfWeek),
+      default: [DayOfWeek.sunday],
+    },
   },
-  { timestamps: true },
+  { timestamps: true }
 );
-
-academicYearSchema.index({ isActive: 1 });
 
 const AcademicYearModel =
   (mongoose.models.AcademicYear as mongoose.Model<AcademicYearDoc>) ||

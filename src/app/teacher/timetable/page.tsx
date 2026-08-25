@@ -15,11 +15,40 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useTeacherTimetable, dayNames } from '@/hooks/useApi';
+import { useAdminAcademicYears } from '@/hooks/admin/useAcademicYears';
+import { DayOfWeek } from '@/types';
 
 export default function TeacherTimetablePage() {
   const { data: timetable = [], isLoading } = useTeacherTimetable();
+  const { data: academicYears } = useAdminAcademicYears();
   const todayDayIdx = new Date().getDay();
-  const [selectedDay, setSelectedDay] = React.useState<number | 'all'>(todayDayIdx);
+  const [selectedDay, setSelectedDay] = React.useState<number | 'all'>(() => {
+    return todayDayIdx;
+  });
+
+  // Get weekly off days from active academic year
+  const weeklyOffDays = React.useMemo(() => {
+    const activeYear = academicYears?.find(ay => ay.isActive);
+    return activeYear?.weeklyOffDays || [];
+  }, [academicYears]);
+
+  // Filter out holiday days from the day selector
+  const availableDays = React.useMemo(() => {
+    return dayNames.map((_, idx) => idx).filter(idx => {
+      const dayOfWeek = Object.values(DayOfWeek)[idx];
+      return !weeklyOffDays.includes(dayOfWeek);
+    });
+  }, [weeklyOffDays]);
+
+  // Update selected day if it becomes a holiday
+  React.useEffect(() => {
+    if (typeof selectedDay === 'number') {
+      const dayOfWeek = Object.values(DayOfWeek)[selectedDay];
+      if (weeklyOffDays.includes(dayOfWeek) && availableDays.length > 0) {
+        setSelectedDay(availableDays[0]);
+      }
+    }
+  }, [weeklyOffDays, availableDays, selectedDay]);
 
   const filteredEntries = React.useMemo(() => {
     if (selectedDay === 'all') {
@@ -50,7 +79,8 @@ export default function TeacherTimetablePage() {
         >
           All Days
         </Button>
-        {dayNames.map((day, idx) => {
+        {availableDays.map((idx) => {
+          const day = dayNames[idx];
           const isToday = idx === todayDayIdx;
           const isSelected = selectedDay === idx;
           const count = timetable.filter((t) => t.dayOfWeek === idx).length;

@@ -163,7 +163,7 @@ export const POST = withHandler(async (req: NextRequest) => {
       if (!existingPresence.exitTime) {
         // Record exit
         existingPresence.exitTime = now;
-        existingPresence.exitScanEvent = null; // Would set if we had the scan event
+        existingPresence.exitScanEvent = undefined; // Would set if we had the scan event
         await existingPresence.save();
         result.message = "Exit recorded successfully";
         result.action = "exit";

@@ -53,6 +53,21 @@ export enum DayOfWeek {
   saturday = "saturday",
 }
 
+export enum HolidayType {
+  holiday = "holiday",
+  workingDay = "workingDay",
+}
+
+export enum SlotType {
+  period = "period",
+  break = "break",
+}
+
+export enum LeaveStatus {
+  pending = "pending",
+  approved = "approved",
+  rejected = "rejected",
+}
 // ---------- User & Auth ----------
 
 export interface UserDoc extends Document {
@@ -87,12 +102,12 @@ export interface TeacherDoc extends Document {
 }
 
 // ---------- School structure ----------
-
 export interface AcademicYearDoc extends Document {
   label: string;
   startDate: Date;
   endDate: Date;
   isActive: boolean;
+  weeklyOffDays: DayOfWeek[]; // 
   createdAt: Date;
   updatedAt: Date;
 }
@@ -101,6 +116,15 @@ export interface ClassDoc extends Document {
   name: string;
   grade: number;
   academicYear: Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface HolidayDoc extends Document {
+  academicYear: Types.ObjectId;
+  date: Date;
+  title: string;
+  type: HolidayType;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -152,9 +176,23 @@ export interface AttendanceTerminalDoc extends Document {
 
 export interface GlobalTimetableDoc extends Document {
   academicYear: Types.ObjectId;
-  periodNumber: number;
+  order: number;
+  slotType: SlotType;
+  periodNumber?: number;
+  label?: string;
   startTime: string;
   endTime: string;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TeacherLeaveDoc extends Document {
+  teacher: Types.ObjectId;
+  fromDate: Date;
+  toDate: Date;
+  reason: string;
+  status: LeaveStatus;
+  reviewedBy?: Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -165,7 +203,7 @@ export interface SectionTimetableDoc extends Document {
   periodNumber: number;
   subject: Types.ObjectId;
   teacher: Types.ObjectId;
-  classroom: Types.ObjectId;
+  classroom?: Types.ObjectId;
   customStartTime?: string;
   customEndTime?: string;
   createdAt: Date;
@@ -363,4 +401,19 @@ export type PopulatedTeacherPresenceRecord = Omit<
 export type PopulatedNotice = Omit<NoticeDoc, "author" | "targetSections"> & {
   author: UserDoc;
   targetSections: PopulatedSection[];
+};
+
+/**
+ * Holiday with academic year populated
+ */
+export type PopulatedHoliday = Omit<HolidayDoc, "academicYear"> & {
+  academicYear: AcademicYearDoc;
+};
+
+/**
+ * Teacher leave with teacher and reviewer populated
+ */
+export type PopulatedTeacherLeave = Omit<TeacherLeaveDoc, "teacher" | "reviewedBy"> & {
+  teacher: TeacherDoc;
+  reviewedBy?: UserDoc;
 };

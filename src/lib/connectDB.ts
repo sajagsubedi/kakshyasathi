@@ -2,6 +2,11 @@ import mongoose from "mongoose";
 
 import dns from "node:dns/promises";
 
+import ClassModel from "@/models/Class.model";
+import AcademicYearModel from "@/models/AcademicYear.model";
+import SectionModel from "@/models/Section.model";
+import UserModel from "@/models/User.model";
+
 // Force DNS servers (fixes the ECONNREFUSED SRV error)
 dns.setServers(["8.8.8.8", "8.8.4.4"]);
 

@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "create-admin": "tsx src/scripts/create-admin.ts",
+    "seed": "tsx src/scripts/index.ts",
+    "add-data": "tsx addNewData.ts",
     "lint": "eslint"
   },
   "dependencies": {

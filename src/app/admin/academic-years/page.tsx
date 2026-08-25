@@ -38,6 +38,14 @@ import {
 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 
 
 import {
@@ -63,6 +71,7 @@ export default function AdminAcademicYearsPage() {
         label: "",
         startDate: "",
         endDate: "",
+        weeklyOffDays: ["sunday"] as string[],
     });
 
     const resetForm = () => {
@@ -70,6 +79,7 @@ export default function AdminAcademicYearsPage() {
             label: "",
             startDate: "",
             endDate: "",
+            weeklyOffDays: ["sunday"],
         });
 
         setEditingYear(null);
@@ -87,6 +97,7 @@ export default function AdminAcademicYearsPage() {
             label: year.label,
             startDate: formatDateForInput(year.startDate),
             endDate: formatDateForInput(year.endDate),
+            weeklyOffDays: year.weeklyOffDays || ["sunday"],
         });
 
         setDialogOpen(true);
@@ -129,6 +140,7 @@ export default function AdminAcademicYearsPage() {
                         label: form.label.trim(),
                         startDate: form.startDate,
                         endDate: form.endDate,
+                        weeklyOffDays: form.weeklyOffDays,
                     },
                 });
 
@@ -138,6 +150,7 @@ export default function AdminAcademicYearsPage() {
                     label: form.label.trim(),
                     startDate: form.startDate,
                     endDate: form.endDate,
+                    weeklyOffDays: form.weeklyOffDays,
                 });
 
                 toast.success("Academic year created successfully");
@@ -345,6 +358,49 @@ export default function AdminAcademicYearsPage() {
                                     className="mt-1.5"
                                 />
                             </div>
+                        </div>
+
+                        <div>
+                            <Label>Weekly Off Days</Label>
+                            <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+                                {[
+                                  { value: "sunday", label: "Sunday" },
+                                  { value: "monday", label: "Monday" },
+                                  { value: "tuesday", label: "Tuesday" },
+                                  { value: "wednesday", label: "Wednesday" },
+                                  { value: "thursday", label: "Thursday" },
+                                  { value: "friday", label: "Friday" },
+                                  { value: "saturday", label: "Saturday" },
+                                ].map((day) => (
+                                  <div key={day.value} className="flex items-center space-x-2">
+                                    <Checkbox
+                                      id={`day-${day.value}`}
+                                      checked={form.weeklyOffDays.includes(day.value)}
+                                      onCheckedChange={(checked) => {
+                                        if (checked) {
+                                          setForm({
+                                            ...form,
+                                            weeklyOffDays: [...form.weeklyOffDays, day.value],
+                                          });
+                                        } else {
+                                          setForm({
+                                            ...form,
+                                            weeklyOffDays: form.weeklyOffDays.filter(
+                                              (d) => d !== day.value
+                                            ),
+                                          });
+                                        }
+                                      }}
+                                    />
+                                    <label
+                                      htmlFor={`day-${day.value}`}
+                                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                                    >
+                                      {day.label}
+                                    </label>
+                                  </div>
+                                ))}
+                              </div>
                         </div>
                     </div>
 

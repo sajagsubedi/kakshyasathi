@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar, type NavItem } from "@/components/layout/Sidebar";
 import { BottomNav } from "@/components/layout/BottomNav";
 import { TopBar } from "@/components/layout/TopBar";
+import { useAdminAcademicYears } from "@/hooks/admin/useAcademicYears";
 
 import type { UserRole } from "@/types";
 import { useSession } from "next-auth/react";
@@ -31,6 +32,14 @@ export function DashboardLayout({
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
+  const { data: academicYears } = useAdminAcademicYears();
+
+  const latestAcademicYear = React.useMemo(() => {
+    if (!academicYears || academicYears.length === 0) return null;
+    const activeYear = academicYears.find(ay => ay.isActive);
+    if (activeYear) return activeYear.label;
+    return academicYears[academicYears.length - 1].label;
+  }, [academicYears]);
 
   React.useEffect(() => {
     if (status === "loading") {
@@ -94,6 +103,7 @@ export function DashboardLayout({
         navlinks={items}
         title={title}
         subtitle={subtitle}
+        academicYear={latestAcademicYear || undefined}
       />
 
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">

@@ -1,7 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import axios from "axios";
 import { adminRequest } from "@/hooks/admin/http";
-import { UserRole } from "@/types";
+import { UserRole, DayOfWeek } from "@/types";
 
 // ---------- Shared types ----------
 
@@ -14,6 +14,12 @@ export const dayNames = [
   "Friday",
   "Saturday",
 ];
+
+// Helper to get day name from DayOfWeek enum
+export const getDayName = (dayOfWeek: DayOfWeek): string => {
+  const dayIndex = Object.values(DayOfWeek).indexOf(dayOfWeek);
+  return dayNames[dayIndex] || dayOfWeek;
+};
 
 export interface StudentProfile {
   id: string;
@@ -187,6 +193,44 @@ export function useStudentDashboard() {
   });
 }
 
+export function useStudentSchedule() {
+  return useQuery({
+    queryKey: ["student", "schedule"],
+    queryFn: async () => {
+      return adminRequest<{
+        isHoliday: boolean;
+        holidayTitle?: string;
+        isWeeklyOff: boolean;
+        weeklyOffDay?: string;
+        dayOfWeek?: string;
+        date?: string;
+        schedule: Array<{
+          id: string;
+          periodNumber: number;
+          periodId?: string;
+          subjectId: string;
+          subjectName?: string;
+          subjectCode?: string;
+          teacherId: string;
+          teacherName?: string;
+          isSubstitute: boolean;
+          classroomId?: string;
+          roomNumber?: string;
+          startTime?: string;
+          endTime?: string;
+          customStartTime?: string;
+          customEndTime?: string;
+          isCustomTiming?: boolean;
+        }>;
+      }>(
+        axios.get("/api/student/schedule"),
+        "Failed to load schedule.",
+      );
+    },
+    refetchInterval: 60000, // Refresh every minute
+  });
+}
+
 // ---------- Teacher hooks ----------
 
 export function useTeacherTimetable() {
@@ -249,6 +293,47 @@ export function useTeacherDashboard() {
         notices: NoticeDto[];
       }>(axios.get("/api/teacher/dashboard"), "Failed to load dashboard.");
     },
+  });
+}
+
+export function useTeacherSchedule() {
+  return useQuery({
+    queryKey: ["teacher", "schedule"],
+    queryFn: async () => {
+      return adminRequest<{
+        isHoliday: boolean;
+        holidayTitle?: string;
+        isWeeklyOff: boolean;
+        weeklyOffDay?: string;
+        dayOfWeek?: string;
+        date?: string;
+        schedule: Array<{
+          id: string;
+          periodNumber: number;
+          periodId?: string;
+          subjectId: string;
+          subjectName?: string;
+          subjectCode?: string;
+          teacherId: string;
+          teacherName?: string;
+          isSubstitute: boolean;
+          sectionId?: string;
+          sectionName?: string;
+          className?: string;
+          classroomId?: string;
+          roomNumber?: string;
+          startTime?: string;
+          endTime?: string;
+          customStartTime?: string;
+          customEndTime?: string;
+          isCustomTiming?: boolean;
+        }>;
+      }>(
+        axios.get("/api/teacher/schedule"),
+        "Failed to load schedule.",
+      );
+    },
+    refetchInterval: 60000, // Refresh every minute
   });
 }
 
@@ -353,11 +438,53 @@ export function useSmartboardTimetable() {
   return useQuery({
     queryKey: ["smartboard", "timetable"],
     queryFn: async () => {
-      return adminRequest<TimetableEntryDto[]>(
+      return adminRequest<{
+        timetable: TimetableEntryDto[];
+        holidays: string[];
+        weeklyOffDays: string[];
+      }>(
         axios.get("/api/smartboard/timetable"),
         "Failed to load timetable.",
       );
     },
+  });
+}
+
+export function useSmartboardSchedule() {
+  return useQuery({
+    queryKey: ["smartboard", "schedule"],
+    queryFn: async () => {
+      return adminRequest<{
+        isHoliday: boolean;
+        holidayTitle?: string;
+        isWeeklyOff: boolean;
+        weeklyOffDay?: string;
+        dayOfWeek?: string;
+        date?: string;
+        schedule: Array<{
+          id: string;
+          periodNumber: number;
+          periodId?: string;
+          subjectId: string;
+          subjectName?: string;
+          subjectCode?: string;
+          teacherId: string;
+          teacherName?: string;
+          isSubstitute: boolean;
+          classroomId?: string;
+          roomNumber?: string;
+          startTime?: string;
+          endTime?: string;
+          customStartTime?: string;
+          customEndTime?: string;
+          isCustomTiming?: boolean;
+        }>;
+      }>(
+        axios.get("/api/smartboard/schedule"),
+        "Failed to load schedule.",
+      );
+    },
+    refetchInterval: 60000, // Refresh every minute
   });
 }
 

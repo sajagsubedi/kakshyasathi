@@ -53,21 +53,35 @@ export default function AdminPeriodsPage() {
   const [deleteOpen, setDeleteOpen] = React.useState(false);
   const [toDelete, setToDelete] = React.useState<PeriodItem | null>(null);
   const [form, setForm] = React.useState({
+    order: "",
+    slotType: "period" as "period" | "break",
     periodNumber: "",
+    label: "",
     startTime: "",
     endTime: "",
   });
 
   const resetForm = () => {
-    setForm({ periodNumber: "", startTime: "", endTime: "" });
+    setForm({ order: "", slotType: "period", periodNumber: "", label: "", startTime: "", endTime: "" });
     setEditing(null);
   };
 
   const handleSubmit = async () => {
-    const periodNumber = Number(form.periodNumber);
-    if (!form.periodNumber || Number.isNaN(periodNumber) || periodNumber < 1) {
-      toast.error("Valid period number is required");
+    const order = Number(form.order);
+    if (!form.order || Number.isNaN(order) || order < 1) {
+      toast.error("Valid order is required");
       return;
+    }
+    if (!form.slotType || !["period", "break"].includes(form.slotType)) {
+      toast.error("Valid slot type is required");
+      return;
+    }
+    if (form.slotType === "period") {
+      const periodNumber = Number(form.periodNumber);
+      if (!form.periodNumber || Number.isNaN(periodNumber) || periodNumber < 1) {
+        toast.error("Valid period number is required for period slots");
+        return;
+      }
     }
     if (!form.startTime || !form.endTime) {
       toast.error("Start and end time are required");
@@ -87,7 +101,10 @@ export default function AdminPeriodsPage() {
         await updatePeriod.mutateAsync({
           id: editing._id,
           payload: {
-            periodNumber,
+            order,
+            slotType: form.slotType,
+            periodNumber: form.slotType === "period" ? Number(form.periodNumber) : undefined,
+            label: form.label || undefined,
             startTime: form.startTime,
             endTime: form.endTime,
           },
@@ -96,7 +113,10 @@ export default function AdminPeriodsPage() {
       } else {
         await createPeriod.mutateAsync({
           academicYear: academicYearFilter,
-          periodNumber,
+          order,
+          slotType: form.slotType,
+          periodNumber: form.slotType === "period" ? Number(form.periodNumber) : undefined,
+          label: form.label || undefined,
           startTime: form.startTime,
           endTime: form.endTime,
         });
@@ -110,7 +130,7 @@ export default function AdminPeriodsPage() {
   };
 
   const sortedPeriods = React.useMemo(
-    () => [...periods].sort((a, b) => a.periodNumber - b.periodNumber),
+    () => [...periods].sort((a, b) => a.order - b.order),
     [periods],
   );
 
@@ -118,7 +138,7 @@ export default function AdminPeriodsPage() {
     <section>
       <PageHeader
         title="Global Timetable"
-        description="Define the period timings for the school day"
+        description="Define periods and breaks for the school day"
         action={
           <Button
             onClick={() => {
@@ -128,29 +148,48 @@ export default function AdminPeriodsPage() {
             disabled={!academicYearFilter}
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Period
+            Add Slot
           </Button>
         }
       />
 
-      <div className="mb-4">
-        <Select
-          value={academicYearFilter || null}
-          onValueChange={(v) => setAcademicYearFilter(v ?? "")}
-        >
-          <SelectTrigger className="w-full sm:w-80">
-            <SelectValue placeholder="Select academic year" />
-          </SelectTrigger>
-          <SelectContent>
-            {academicYears.map((y) => (
-              <SelectItem key={y._id} value={y._id}>
-                {y.label}
-                {y.isActive ? " (Active)" : ""}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
+      <Select
+        value={academicYearFilter || undefined}
+        onValueChange={(value) => {
+          setAcademicYearFilter(value as string);
+        }}
+      >
+        <SelectTrigger className="w-full sm:w-80">
+          {academicYearFilter ? (
+            <span>
+              {academicYears.find(
+                (year) => String(year._id) === String(academicYearFilter)
+              )?.label ?? "Select academic year"}
+              {academicYears.find(
+                (year) => String(year._id) === String(academicYearFilter)
+              )?.isActive
+                ? " (Active)"
+                : ""}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">
+              Select academic year
+            </span>
+          )}
+        </SelectTrigger>
+
+        <SelectContent>
+          {academicYears.map((year) => (
+            <SelectItem
+              key={String(year._id)}
+              value={String(year._id)}
+            >
+              {year.label}
+              {year.isActive ? " (Active)" : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
       {!academicYearFilter ? (
         <Card>
@@ -170,9 +209,9 @@ export default function AdminPeriodsPage() {
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12 text-center">
             <Clock className="mb-3 h-7 w-7 text-primary" />
-            <h3 className="font-semibold">No periods defined yet</h3>
+            <h3 className="font-semibold">No slots defined yet</h3>
             <p className="mt-1 text-sm text-muted-foreground">
-              Create periods to build the global timetable for this academic year.
+              Create periods and breaks to build the global timetable for this academic year.
             </p>
           </CardContent>
         </Card>
@@ -190,7 +229,9 @@ export default function AdminPeriodsPage() {
                   </div>
                   <div>
                     <p className="text-sm font-semibold">
-                      Period {period.periodNumber}
+                      {period.slotType === "period"
+                        ? `Period ${period.periodNumber}`
+                        : period.label || `Break ${period.order}`}
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {period.startTime} – {period.endTime}
@@ -204,7 +245,10 @@ export default function AdminPeriodsPage() {
                     onClick={() => {
                       setEditing(period);
                       setForm({
-                        periodNumber: String(period.periodNumber),
+                        order: String(period.order),
+                        slotType: period.slotType,
+                        periodNumber: period.periodNumber ? String(period.periodNumber) : "",
+                        label: period.label || "",
                         startTime: period.startTime,
                         endTime: period.endTime,
                       });
@@ -241,29 +285,78 @@ export default function AdminPeriodsPage() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {editing ? "Edit Period" : "Add Period"}
+              {editing ? "Edit Slot" : "Add Slot"}
             </DialogTitle>
             <DialogDescription>
               {editing
-                ? "Update the period timing."
-                : "Define a new period for the global timetable."}
+                ? "Update the slot timing and details."
+                : "Define a new period or break for the global timetable."}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div>
-              <Label htmlFor="period-number">Period Number</Label>
-              <Input
-                id="period-number"
-                type="number"
-                min={1}
-                value={form.periodNumber}
-                onChange={(e) =>
-                  setForm({ ...form, periodNumber: e.target.value })
-                }
-                placeholder="e.g. 1"
-                className="mt-1.5"
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <Label htmlFor="period-order">Order</Label>
+                <Input
+                  id="period-order"
+                  type="number"
+                  min={1}
+                  value={form.order}
+                  onChange={(e) =>
+                    setForm({ ...form, order: e.target.value })
+                  }
+                  placeholder="e.g. 1"
+                  className="mt-1.5"
+                />
+              </div>
+              <div>
+                <Label htmlFor="period-slot-type">Slot Type</Label>
+                <Select
+                  value={form.slotType}
+                  onValueChange={(v) =>
+                    setForm({ ...form, slotType: v as "period" | "break" })
+                  }
+                >
+                  <SelectTrigger className="mt-1.5">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="period">Period</SelectItem>
+                    <SelectItem value="break">Break</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+            {form.slotType === "period" && (
+              <div>
+                <Label htmlFor="period-number">Period Number</Label>
+                <Input
+                  id="period-number"
+                  type="number"
+                  min={1}
+                  value={form.periodNumber}
+                  onChange={(e) =>
+                    setForm({ ...form, periodNumber: e.target.value })
+                  }
+                  placeholder="e.g. 1"
+                  className="mt-1.5"
+                />
+              </div>
+            )}
+            {form.slotType === "break" && (
+              <div>
+                <Label htmlFor="period-label">Label</Label>
+                <Input
+                  id="period-label"
+                  value={form.label}
+                  onChange={(e) =>
+                    setForm({ ...form, label: e.target.value })
+                  }
+                  placeholder="e.g. Lunch Break"
+                  className="mt-1.5"
+                />
+              </div>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="period-start">Start Time</Label>
@@ -299,7 +392,7 @@ export default function AdminPeriodsPage() {
               onClick={handleSubmit}
               disabled={createPeriod.isPending || updatePeriod.isPending}
             >
-              {editing ? "Update Period" : "Create Period"}
+              {editing ? "Update Slot" : "Create Slot"}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -307,22 +400,24 @@ export default function AdminPeriodsPage() {
 
       <DeleteModal
         isOpen={deleteOpen}
-        title="Delete Period"
+        title="Delete Slot"
         message={
           toDelete
-            ? `Delete Period ${toDelete.periodNumber}? This cannot be undone.`
-            : "Delete this period?"
+            ? `Delete ${toDelete.slotType === "period"
+              ? `Period ${toDelete.periodNumber}`
+              : (toDelete.label || `Break ${toDelete.order}`)}? This cannot be undone.`
+            : "Delete this slot?"
         }
         onConfirm={async () => {
           if (!toDelete) return;
           try {
             await deletePeriod.mutateAsync(toDelete._id);
-            toast.success("Period deleted successfully");
+            toast.success("Slot deleted successfully");
             setDeleteOpen(false);
             setToDelete(null);
           } catch (err) {
             toast.error(
-              err instanceof Error ? err.message : "Failed to delete period",
+              err instanceof Error ? err.message : "Failed to delete slot",
             );
           }
         }}

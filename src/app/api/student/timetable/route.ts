@@ -6,6 +6,8 @@ import StudentModel from "@/models/Student.model";
 import SectionModel from "@/models/Section.model";
 import TimetableModel from "@/models/Timetable.model";
 import PeriodModel from "@/models/Period.model";
+import AcademicYearModel from "@/models/AcademicYear.model";
+import { DayOfWeek } from "@/types";
 
 const dayMap: Record<string, number> = {
   sunday: 0,
@@ -33,8 +35,15 @@ export const GET = withHandler(async () => {
   const cls = section?.class as unknown as { academicYear?: unknown } | undefined;
   const academicYearId = cls?.academicYear;
 
+  // Get active academic year for weekly off days
+  const activeYear = await AcademicYearModel.findOne({ isActive: true });
+  const weeklyOffDays = activeYear?.weeklyOffDays || [DayOfWeek.sunday];
+
   const [timetable, globalPeriods] = await Promise.all([
-    TimetableModel.find({ section: student.section })
+    TimetableModel.find({ 
+      section: student.section,
+      dayOfWeek: { $nin: weeklyOffDays },
+    })
       .populate("subject", "name code")
       .populate({
         path: "teacher",
@@ -50,10 +59,12 @@ export const GET = withHandler(async () => {
 
   const globalPeriodMap = new Map<number, { startTime: string; endTime: string }>();
   globalPeriods.forEach((p) => {
-    globalPeriodMap.set(p.periodNumber, {
-      startTime: p.startTime,
-      endTime: p.endTime,
-    });
+    if (p.slotType === "period" && p.periodNumber && !globalPeriodMap.has(p.periodNumber)) {
+      globalPeriodMap.set(p.periodNumber, {
+        startTime: p.startTime,
+        endTime: p.endTime,
+      });
+    }
   });
 
   return ApiResponse(

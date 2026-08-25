@@ -18,9 +18,10 @@ interface SidebarProps {
   navlinks: NavItem[];
   title: string;
   subtitle: string;
+  academicYear?: string;
 }
 
-export function Sidebar({ navlinks, title, subtitle }: SidebarProps) {
+export function Sidebar({ navlinks, title, subtitle, academicYear }: SidebarProps) {
   const pathname = usePathname();
 
   const items = navlinks.map((elem) => {
@@ -79,7 +80,7 @@ export function Sidebar({ navlinks, title, subtitle }: SidebarProps) {
       <div className="border-t border-sidebar-border p-4">
         <div className="rounded-lg bg-muted/50 p-3 text-xs text-muted-foreground">
           <p className="font-medium text-foreground">Academic Year</p>
-          <p className="mt-0.5">2025 – 2026</p>
+          <p className="mt-0.5">{academicYear || '2025 – 2026'}</p>
         </div>
       </div>
     </aside>

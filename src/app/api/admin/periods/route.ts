@@ -28,7 +28,7 @@ export const GET = withHandler(async (req: NextRequest) => {
 
   const items = await PeriodModel.find({ academicYear })
     .populate("academicYear", "label isActive")
-    .sort({ periodNumber: 1 })
+    .sort({ order: 1 })
     .lean();
 
   return ApiResponse(items, "Periods fetched successfully");
@@ -39,7 +39,7 @@ export const POST = withHandler(async (req: NextRequest) => {
   await connectDb();
 
   const body = await req.json();
-  const { academicYear, periodNumber, startTime, endTime } = body;
+  const { academicYear, order, slotType, periodNumber, label, startTime, endTime } = body;
 
   if (!academicYear) throw new Error("Academic year is required");
   parseObjectId(academicYear, "academicYear");
@@ -47,22 +47,40 @@ export const POST = withHandler(async (req: NextRequest) => {
   const year = await AcademicYearModel.findById(academicYear);
   if (!year) throw new Error("Academic year not found");
 
-  if (typeof periodNumber !== "number" || periodNumber < 1) {
-    throw new Error("Valid period number is required");
+  if (typeof order !== "number" || order < 1) {
+    throw new Error("Valid order is required");
+  }
+
+  if (!slotType || !["period", "break"].includes(slotType)) {
+    throw new Error("Valid slot type is required (period or break)");
+  }
+
+  if (slotType === "period" && (typeof periodNumber !== "number" || periodNumber < 1)) {
+    throw new Error("Valid period number is required for period slots");
   }
 
   const start = parseTime(startTime, "Start time");
   const end = parseTime(endTime, "End time");
   assertTimeRange(start, end);
 
-  const existing = await PeriodModel.findOne({ academicYear, periodNumber });
+  const existing = await PeriodModel.findOne({ academicYear, order });
   if (existing) {
-    throw new Error("This period number already exists for the academic year");
+    throw new Error("This order already exists for the academic year");
+  }
+
+  if (slotType === "period") {
+    const existingPeriod = await PeriodModel.findOne({ academicYear, periodNumber });
+    if (existingPeriod) {
+      throw new Error("This period number already exists for the academic year");
+    }
   }
 
   const doc = await PeriodModel.create({
     academicYear,
-    periodNumber,
+    order,
+    slotType,
+    periodNumber: slotType === "period" ? periodNumber : undefined,
+    label,
     startTime: start,
     endTime: end,
   });

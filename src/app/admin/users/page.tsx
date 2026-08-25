@@ -580,12 +580,24 @@ export default function AdminUsersPage() {
                   <Select
                     value={form.section || undefined}
                     onValueChange={(v) =>
-                      setForm({ ...form, section: v ?? "" })
+                      setForm((prev) => ({
+                        ...prev,
+                        section: v ?? "",
+                      }))
                     }
                   >
                     <SelectTrigger id="user-section" className="mt-1.5">
-                      <SelectValue placeholder="Select a section" />
+                      <SelectValue placeholder="Select a section">
+                        {form.section
+                          ? sectionLabel(
+                            sections.find(
+                              (section) => section._id === form.section
+                            )
+                          )
+                          : "Select a section"}
+                      </SelectValue>
                     </SelectTrigger>
+
                     <SelectContent>
                       {sections.map((s) => (
                         <SelectItem key={s._id} value={s._id}>
@@ -742,4 +754,4 @@ export default function AdminUsersPage() {
       </Dialog>
     </section>
   );
-}
+} 

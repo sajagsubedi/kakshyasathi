@@ -4,6 +4,8 @@ import { requireAdmin } from "@/lib/ValidatePermission";
 import { ApiResponse } from "@/lib/api/ApiResponse";
 import connectDb from "@/lib/connectDB";
 import TimetableModel from "@/models/Timetable.model";
+import AcademicYearModel from "@/models/AcademicYear.model";
+import ClassroomModel from "@/models/Classroom.model";
 import { parseObjectId } from "@/lib/api/parseId";
 import { parseTime } from "@/lib/api/time";
 import { DayOfWeek } from "@/types";
@@ -34,6 +36,15 @@ export const PATCH = withHandler(
       if (!Object.values(DayOfWeek).includes(body.dayOfWeek)) {
         throw new Error("Invalid day of week");
       }
+      
+      // Check if the new day is a holiday
+      const activeAcademicYear = await AcademicYearModel.findOne({ isActive: true });
+      if (activeAcademicYear && activeAcademicYear.weeklyOffDays) {
+        if (activeAcademicYear.weeklyOffDays.includes(body.dayOfWeek)) {
+          throw new Error(`Cannot update timetable entry to ${body.dayOfWeek} as it's a holiday in the active academic year`);
+        }
+      }
+      
       doc.dayOfWeek = body.dayOfWeek;
     }
     if (body.periodNumber !== undefined) {
@@ -50,10 +61,10 @@ export const PATCH = withHandler(
       parseObjectId(body.teacher, "teacher");
       doc.teacher = body.teacher;
     }
-    if (body.classroom !== undefined) {
-      parseObjectId(body.classroom, "classroom");
-      doc.classroom = body.classroom;
-    }
+    // Auto-calculate classroom from section
+    const classroom = await ClassroomModel.findOne({ section: doc.section });
+    if (!classroom) throw new Error("Classroom not found for this section");
+    doc.classroom = classroom._id;
     if (body.customStartTime !== undefined) {
       doc.customStartTime = body.customStartTime
         ? parseTime(body.customStartTime, "Custom start time")

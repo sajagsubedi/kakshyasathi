@@ -9,6 +9,7 @@ import PeriodModel from "@/models/Period.model";
 import SubstitutionModel from "@/models/Substitution.model";
 import StudentAttendanceModel from "@/models/StudentAttendance.model";
 import NoticeModel from "@/models/Notice.model";
+import AcademicYearModel from "@/models/AcademicYear.model";
 import { DayOfWeek, NoticeTargetType } from "@/types";
 
 const dayNamesList: DayOfWeek[] = [
@@ -80,8 +81,15 @@ export const GET = withHandler(async () => {
   const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 0, 0, 0, 0);
   const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59, 999);
 
+  // Get active academic year for weekly off days
+  const activeYear = await AcademicYearModel.findOne({ isActive: true });
+  const weeklyOffDays = activeYear?.weeklyOffDays || [DayOfWeek.sunday];
+
   const [timetable, globalPeriods, todaySubstitutions, attendance, notices] = await Promise.all([
-    TimetableModel.find({ section: sectionId })
+    TimetableModel.find({ 
+      section: sectionId,
+      dayOfWeek: { $nin: weeklyOffDays },
+    })
       .populate("subject", "name code")
       .populate({
         path: "teacher",
@@ -126,10 +134,12 @@ export const GET = withHandler(async () => {
 
   const globalPeriodMap = new Map<number, { startTime: string; endTime: string }>();
   globalPeriods.forEach((p) => {
-    globalPeriodMap.set(p.periodNumber, {
-      startTime: p.startTime,
-      endTime: p.endTime,
-    });
+    if (p.slotType === "period" && p.periodNumber && !globalPeriodMap.has(p.periodNumber)) {
+      globalPeriodMap.set(p.periodNumber, {
+        startTime: p.startTime,
+        endTime: p.endTime,
+      });
+    }
   });
 
   const subMap = new Map<number, unknown>();

@@ -29,10 +29,13 @@ export const GET = withHandler(async (req: NextRequest) => {
       $options: "i",
     };
   }
-
   const [items, total] = await Promise.all([
     ClassModel.find(filter)
-      .populate("academicYear", "_id label")
+      .populate({
+        path: "academicYear",
+        model: "AcademicYear",
+        select: "label startDate endDate isActive"
+      })
       .sort({ grade: 1, name: 1 })
       .skip(skip)
       .limit(limit)
@@ -40,7 +43,6 @@ export const GET = withHandler(async (req: NextRequest) => {
 
     ClassModel.countDocuments(filter),
   ]);
-
   return ApiResponse(
     {
       items,

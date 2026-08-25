@@ -1,70 +1,155 @@
 'use client';
 
 import * as React from 'react';
-import { ScanLine, CheckCircle2, XCircle } from 'lucide-react';
-import { toast } from 'react-toastify';
+import { CheckCircle2, XCircle, Users, Clock, Calendar, AlertCircle } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { useSmartboardAttendance, useBarcodeScan, useSharedLookup } from '@/hooks/useApi';
-import { UserRole } from '@/types';
+import { StatCard } from '@/components/shared/StatCard';
+import { useSmartboardAttendance, useSmartboardClassroom, useSharedLookup } from '@/hooks/useApi';
 
 export default function SmartBoardAttendancePage() {
-  const [barcode, setBarcode] = React.useState('');
-  const [scanRole, setScanRole] = React.useState<UserRole>(UserRole.student);
   const { data: attendance = [] } = useSmartboardAttendance();
-  const scan = useBarcodeScan();
+  const { data: classroom } = useSmartboardClassroom();
   const { data: lookup } = useSharedLookup();
   const users = lookup?.users ?? [];
 
-  const handleScan = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!barcode.trim()) return;
-    try {
-      await scan.mutateAsync({ barcode: barcode.trim(), role: scanRole });
-      toast.success(`${scanRole === 'student' ? 'Attendance' : 'Presence'} recorded`);
-      setBarcode('');
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Scan failed');
-    }
-  };
+  const attendanceStats = React.useMemo(() => {
+    const present = attendance.filter((a) => a.status === 'PRESENT').length;
+    const absent = attendance.filter((a) => a.status === 'ABSENT').length;
+    const late = attendance.filter((a) => a.status === 'LATE').length;
+    const total = attendance.length;
+    const presentPercentage = total > 0 ? Math.round((present / total) * 100) : 0;
+    return { present, absent, late, total, presentPercentage };
+  }, [attendance]);
+
+  const summary = classroom?.attendanceSummary;
 
   return (
     <section>
-      <PageHeader title="Scan ID Cards" description="Scan student or teacher barcodes" />
-      <Card className="mb-6">
-        <CardHeader><CardTitle className="text-base">Barcode Scanner</CardTitle><CardDescription>Username from school ID card</CardDescription></CardHeader>
-        <CardContent>
-          <form onSubmit={handleScan} className="flex flex-col gap-3 sm:flex-row">
-            <Input value={barcode} onChange={(e) => setBarcode(e.target.value)} placeholder="Scan or enter barcode..." className="flex-1 font-mono" autoFocus />
-            <div className="flex gap-2">
-              <Button type="button" variant={scanRole === 'student' ? 'default' : 'outline'} onClick={() => setScanRole(UserRole.student)}>Student</Button>
-              <Button type="button" variant={scanRole === 'teacher' ? 'default' : 'outline'} onClick={() => setScanRole(UserRole.teacher)}>Teacher</Button>
-              <Button type="submit" disabled={scan.isPending}><ScanLine className="mr-2 h-4 w-4" />Scan</Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader><CardTitle className="text-base">Today&nbsp;s Attendance</CardTitle></CardHeader>
-        <CardContent className="space-y-2">
-          {attendance.map((record) => {
-            const student = users.find((u) => u.id === record.studentId);
-            return (
-              <div key={record.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
-                <span className="text-sm">{student?.fullName ?? record.studentId}</span>
-                <Badge className={record.status === 'PRESENT' ? 'bg-emerald-500 text-white' : ''} variant={record.status === 'ABSENT' ? 'destructive' : 'default'}>
-                  {record.status === 'PRESENT' ? <CheckCircle2 className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
-                  {record.status}
-                </Badge>
+      <PageHeader 
+        title="Attendance Summary" 
+        description="Today's attendance overview"
+      />
+      
+      <div className="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+        <StatCard
+          label="Total Students"
+          value={summary?.total || attendanceStats.total}
+          icon={Users}
+          accent="primary"
+        />
+        <StatCard
+          label="Present"
+          value={summary?.present || attendanceStats.present}
+          icon={CheckCircle2}
+          accent="success"
+        />
+        <StatCard
+          label="Absent"
+          value={attendanceStats.absent}
+          icon={XCircle}
+          accent="destructive"
+        />
+        <StatCard
+          label="Attendance Rate"
+          value={`${attendanceStats.presentPercentage}%`}
+          icon={Clock}
+          accent="chart-2"
+        />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Attendance Details</CardTitle>
+            <CardDescription>Recent attendance records</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {attendance.length > 0 ? (
+              attendance.slice(0, 10).map((record) => {
+                const student = users.find((u) => u.id === record.studentId);
+                return (
+                  <div key={record.id} className="flex items-center justify-between rounded-lg border px-3 py-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium">{student?.fullName || record.studentId}</p>
+                      {record.scannedAt && (
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(record.scannedAt).toLocaleTimeString()}
+                        </p>
+                      )}
+                    </div>
+                    <Badge 
+                      className={record.status === 'PRESENT' ? 'bg-emerald-500 text-white' : ''}
+                      variant={record.status === 'ABSENT' ? 'destructive' : 'default'}
+                    >
+                      {record.status === 'PRESENT' ? <CheckCircle2 className="mr-1 h-3 w-3" /> : 
+                       record.status === 'ABSENT' ? <XCircle className="mr-1 h-3 w-3" /> :
+                       <Clock className="mr-1 h-3 w-3" />}
+                      {record.status}
+                    </Badge>
+                  </div>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
+                <p className="text-sm text-muted-foreground">No attendance records yet today</p>
+                <p className="text-xs text-muted-foreground mt-1">Attendance is recorded via terminal scanning</p>
               </div>
-            );
-          })}
-          {!attendance.length && <p className="text-sm text-muted-foreground">No attendance records yet</p>}
-        </CardContent>
-      </Card>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Statistics</CardTitle>
+            <CardDescription>Attendance breakdown</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Present</span>
+                <span className="font-medium">{attendanceStats.present} students</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div 
+                  className="h-full bg-emerald-500 transition-all" 
+                  style={{ width: `${attendanceStats.presentPercentage}%` }}
+                />
+              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">Absent</span>
+                <span className="font-medium">{attendanceStats.absent} students</span>
+              </div>
+              <div className="h-2 rounded-full bg-muted overflow-hidden">
+                <div 
+                  className="h-full bg-red-500 transition-all" 
+                  style={{ width: `${attendanceStats.total > 0 ? (attendanceStats.absent / attendanceStats.total) * 100 : 0}%` }}
+                />
+              </div>
+            </div>
+
+            {attendanceStats.late > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Late</span>
+                  <span className="font-medium">{attendanceStats.late} students</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div 
+                    className="h-full bg-amber-500 transition-all" 
+                    style={{ width: `${attendanceStats.total > 0 ? (attendanceStats.late / attendanceStats.total) * 100 : 0}%` }}
+                  />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
     </section>
   );
 }

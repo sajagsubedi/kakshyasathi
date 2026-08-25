@@ -5,7 +5,10 @@ import { adminRequest } from "@/hooks/admin/http";
 export interface PeriodItem {
   _id: string;
   academicYear: { _id: string; label: string; isActive?: boolean } | string;
-  periodNumber: number;
+  order: number;
+  slotType: "period" | "break";
+  periodNumber?: number;
+  label?: string;
   startTime: string;
   endTime: string;
 }
@@ -31,7 +34,10 @@ export function useAdminPeriods(academicYear?: string) {
   const createPeriod = useMutation({
     mutationFn: async (payload: {
       academicYear: string;
-      periodNumber: number;
+      order: number;
+      slotType: "period" | "break";
+      periodNumber?: number;
+      label?: string;
       startTime: string;
       endTime: string;
     }) => {
@@ -49,7 +55,10 @@ export function useAdminPeriods(academicYear?: string) {
     }: {
       id: string;
       payload: Partial<{
-        periodNumber: number;
+        order: number;
+        slotType: "period" | "break";
+        periodNumber?: number;
+        label?: string;
         startTime: string;
         endTime: string;
       }>;

@@ -9,6 +9,8 @@ import {
   Calendar,
   Search,
   Filter,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { StatCard } from '@/components/shared/StatCard';
@@ -30,17 +32,50 @@ export default function StudentAttendancePage() {
   const { data: attendance = [], isLoading } = useStudentAttendance();
   const { data: profile } = useStudentProfile();
   const [filter, setFilter] = React.useState<'ALL' | 'PRESENT' | 'LATE' | 'ABSENT'>('ALL');
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const today = new Date();
 
-  const present = attendance.filter((a) => a.status === 'PRESENT').length;
-  const late = attendance.filter((a) => a.status === 'LATE').length;
-  const absent = attendance.filter((a) => a.status === 'ABSENT').length;
-  const total = attendance.length;
+  const formatDateForAPI = (date: Date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  const formatDisplayDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const navigateDate = (days: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + days);
+    setSelectedDate(newDate);
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
+
+  const attendanceForDate = React.useMemo(() => {
+    const selectedDateStr = formatDateForAPI(selectedDate);
+    return attendance.filter((a) => {
+      const recordDate = new Date(a.date).toISOString().split("T")[0];
+      return recordDate === selectedDateStr;
+    });
+  }, [attendance, selectedDate]);
+
+  const present = attendanceForDate.filter((a) => a.status === 'PRESENT').length;
+  const late = attendanceForDate.filter((a) => a.status === 'LATE').length;
+  const absent = attendanceForDate.filter((a) => a.status === 'ABSENT').length;
+  const total = attendanceForDate.length;
   const rate = total ? Math.round(((present + late) / total) * 100) : 0;
 
   const filteredAttendance = React.useMemo(() => {
-    if (filter === 'ALL') return attendance;
-    return attendance.filter((a) => a.status === filter);
-  }, [attendance, filter]);
+    if (filter === 'ALL') return attendanceForDate;
+    return attendanceForDate.filter((a) => a.status === filter);
+  }, [attendanceForDate, filter]);
 
   return (
     <section className="space-y-6">
@@ -52,6 +87,39 @@ export default function StudentAttendancePage() {
             : 'Personal attendance records and scan history'
         }
       />
+
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigateDate(-1)}
+            className="h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigateDate(1)}
+            className="h-8 w-8"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToToday}
+            className="h-8"
+          >
+            Today
+          </Button>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-background">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{formatDisplayDate(selectedDate)}</span>
+          </div>
+        </div>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard
@@ -84,7 +152,10 @@ export default function StudentAttendancePage() {
                 Attendance Log
               </CardTitle>
               <CardDescription>
-                Showing {filteredAttendance.length} of {attendance.length} logged sessions
+                {formatDateForAPI(selectedDate) === formatDateForAPI(today) 
+                  ? `Showing ${filteredAttendance.length} of ${attendance.length} logged sessions`
+                  : `Showing ${filteredAttendance.length} records for ${formatDisplayDate(selectedDate)}`
+                }
               </CardDescription>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -94,7 +165,7 @@ export default function StudentAttendancePage() {
                 onClick={() => setFilter('ALL')}
                 className="text-xs h-8"
               >
-                All ({attendance.length})
+                All ({attendanceForDate.length})
               </Button>
               <Button
                 variant={filter === 'PRESENT' ? 'default' : 'outline'}
@@ -181,7 +252,11 @@ export default function StudentAttendancePage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <ClipboardCheck className="h-10 w-10 text-muted-foreground/40" />
-              <p className="mt-3 text-sm font-medium text-muted-foreground">No attendance records found for this filter.</p>
+              <p className="mt-3 text-sm font-medium text-muted-foreground">
+                {formatDateForAPI(selectedDate) === formatDateForAPI(today)
+                  ? 'No attendance records found for today.'
+                  : `No attendance records found for ${formatDisplayDate(selectedDate)}.`}
+              </p>
             </div>
           )}
         </CardContent>

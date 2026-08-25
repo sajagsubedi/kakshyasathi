@@ -16,6 +16,9 @@ import {
   DoorOpen,
   Clock,
   ScanLine,
+  Calendar,
+  UserMinus,
+  CalendarClock,
 } from "lucide-react";
 
 export const adminNav = [
@@ -57,6 +60,16 @@ export const adminNav = [
   {
     label: "Periods",
     href: "/admin/periods",
+    isBottomNav: false,
+  },
+  {
+    label: "Holidays",
+    href: "/admin/holidays",
+    isBottomNav: false,
+  },
+  {
+    label: "Teacher Leaves",
+    href: "/admin/teacher-leaves",
     isBottomNav: false,
   },
   {
@@ -154,6 +167,11 @@ export const smartboardNav = [
     isBottomNav: true,
   },
   {
+    label: "Today's Schedule",
+    href: "/smartboard/schedule",
+    isBottomNav: true,
+  },
+  {
     label: "Timetable",
     href: "/smartboard/timetable",
     isBottomNav: true,
@@ -204,6 +222,14 @@ export const navIcons = [
     icon: Clock,
   },
   {
+    label: "Holidays",
+    icon: Calendar,
+  },
+  {
+    label: "Teacher Leaves",
+    icon: UserMinus,
+  },
+  {
     label: "Classrooms",
     icon: DoorOpen,
   },
@@ -214,6 +240,10 @@ export const navIcons = [
   {
     label: "Terminals",
     icon: ScanLine,
+  },
+  {
+    label: "Today's Schedule",
+    icon: CalendarClock,
   },
   {
     label: "Timetable",
@@ -234,5 +264,9 @@ export const navIcons = [
   {
     label: "Presence",
     icon: Clock,
+  },
+  {
+    label: "Today's Schedule",
+    icon: CalendarClock,
   },
 ];

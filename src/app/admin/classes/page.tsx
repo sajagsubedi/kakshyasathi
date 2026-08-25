@@ -748,7 +748,7 @@ function ClassCard({
               Grade {classItem.grade} · AY{" "}
               {typeof classItem.academicYear === "string"
                 ? classItem.academicYear
-                : classItem.academicYear.label}
+                : (classItem.academicYear as any)?.label || "N/A"}
             </CardDescription>
           </div>
         </button>

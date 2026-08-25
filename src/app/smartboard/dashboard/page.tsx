@@ -2,8 +2,9 @@
 
 import * as React from 'react';
 import Link from 'next/link';
-import { ScanLine, Clock, User, BookOpen, UserCheck, Monitor, Wifi, CheckCircle2, Bell, ArrowRight } from 'lucide-react';
+import { Clock, User, BookOpen, UserCheck, Monitor, Wifi, CheckCircle2, Bell, ArrowRight, XCircle, Users, CalendarClock } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { StatCard } from '@/components/shared/StatCard';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSmartboardClassroom, useSmartboardNotices, useSmartboardAttendance } from '@/hooks/useApi';
@@ -25,12 +26,49 @@ export default function SmartBoardDashboard() {
   const next = classroom?.nextPeriod;
   const summary = classroom?.attendanceSummary;
 
+  const attendanceStats = React.useMemo(() => {
+    const present = attendance.filter((a) => a.status === 'PRESENT').length;
+    const absent = attendance.filter((a) => a.status === 'ABSENT').length;
+    const total = attendance.length;
+    return { present, absent, total };
+  }, [attendance]);
+
   return (
     <section>
-      <PageHeader title={classroom?.sectionName ?? 'Classroom'} description={dateStr} />
+      <PageHeader 
+        title={classroom?.sectionName ?? 'Classroom'} 
+        description={dateStr}
+        action={
+          <Link href="/smartboard/schedule" className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-3 py-2 text-sm font-medium transition-colors hover:bg-muted">
+            <CalendarClock className="mr-2 h-4 w-4" />
+            Today's Schedule
+          </Link>
+        }
+      />
       <div className="mb-6 flex items-center justify-between rounded-2xl border bg-card p-6">
         <div><p className="text-4xl font-bold tabular-nums">{timeStr}</p><p className="text-sm text-muted-foreground">{dateStr}</p></div>
         <Badge className="bg-emerald-500 text-white"><Wifi className="mr-1 h-3 w-3" />ONLINE</Badge>
+      </div>
+      
+      <div className="mb-6 grid grid-cols-3 gap-4">
+        <StatCard
+          label="Total Students"
+          value={attendanceStats.total}
+          icon={Users}
+          accent="primary"
+        />
+        <StatCard
+          label="Present"
+          value={attendanceStats.present}
+          icon={CheckCircle2}
+          accent="success"
+        />
+        <StatCard
+          label="Absent"
+          value={attendanceStats.absent}
+          icon={XCircle}
+          accent="destructive"
+        />
       </div>
       <div className="grid gap-6 lg:grid-cols-3">
         <Card className="lg:col-span-2 border-primary/20">
@@ -68,16 +106,22 @@ export default function SmartBoardDashboard() {
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-base">Attendance Today</CardTitle>
+            <CardTitle className="text-base">Recent Attendance</CardTitle>
             <Link href="/smartboard/attendance" className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 py-1.5 text-sm font-medium transition-colors hover:bg-muted">
-              <ScanLine className="mr-2 h-3.5 w-3.5" />Scan
+              <ArrowRight className="h-3.5 w-3.5" />
             </Link>
           </CardHeader>
           <CardContent className="space-y-2">
-            {attendance.filter((a) => a.status === 'PRESENT').slice(0, 5).map((a) => (
+            {attendance.slice(0, 5).map((a) => (
               <div key={a.id} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
                 <span>{a.studentId.slice(-6)}</span>
-                <Badge className="bg-emerald-500 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Present</Badge>
+                {a.status === 'PRESENT' ? (
+                  <Badge className="bg-emerald-500 text-white"><CheckCircle2 className="mr-1 h-3 w-3" />Present</Badge>
+                ) : a.status === 'ABSENT' ? (
+                  <Badge variant="destructive"><XCircle className="mr-1 h-3 w-3" />Absent</Badge>
+                ) : (
+                  <Badge className="bg-amber-500 text-white"><Clock className="mr-1 h-3 w-3" />Late</Badge>
+                )}
               </div>
             ))}
             {!attendance.length && <p className="text-sm text-muted-foreground">No scans yet today</p>}

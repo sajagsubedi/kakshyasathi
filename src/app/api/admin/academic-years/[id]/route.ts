@@ -84,6 +84,12 @@ export const PATCH = withHandler(
       throw new Error("Start date must be before end date");
     }
 
+    if (body.weeklyOffDays !== undefined) {
+      if (Array.isArray(body.weeklyOffDays)) {
+        academicYear.weeklyOffDays = body.weeklyOffDays;
+      }
+    }
+
     await academicYear.save();
 
     return ApiResponse(academicYear, "Academic year updated successfully");

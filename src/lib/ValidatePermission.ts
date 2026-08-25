@@ -3,7 +3,7 @@ import { UserRole as DbUserRole } from "@/types";
 
 import { ForbiddenError, UnauthorizedError } from "@/lib/api/ApiError";
 
-export type AllowedRole = DbUserRole | "SMARTBOARD";
+export type AllowedRole = DbUserRole;
 
 export async function requireAuth(allowedRoles?: AllowedRole[]) {
   const session = await auth();
@@ -34,5 +34,5 @@ export async function requireStudent() {
 }
 
 export async function requireSmartboard() {
-  return requireAuth(["smartboard"]);
+  return requireAuth([DbUserRole.smartboard]);
 }

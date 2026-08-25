@@ -46,7 +46,6 @@ export function useAdminTimetable(section?: string) {
       periodNumber: number;
       subject: string;
       teacher: string;
-      classroom: string;
       customStartTime?: string;
       customEndTime?: string;
     }) => {
@@ -71,7 +70,6 @@ export function useAdminTimetable(section?: string) {
         periodNumber: number;
         subject: string;
         teacher: string;
-        classroom: string;
         customStartTime: string | null;
         customEndTime: string | null;
       }>;

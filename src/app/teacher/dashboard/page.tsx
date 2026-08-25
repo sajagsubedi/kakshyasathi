@@ -12,6 +12,7 @@ import {
   Users,
   CheckCircle2,
   BookOpen,
+  CalendarClock,
 } from 'lucide-react';
 import { StatCard } from '@/components/shared/StatCard';
 import { PageHeader } from '@/components/shared/PageHeader';
@@ -99,12 +100,21 @@ export default function TeacherDashboard() {
               </CardTitle>
               <CardDescription>{dayNames[dayIdx]} schedule</CardDescription>
             </div>
-            <Link
-              href="/teacher/timetable"
-              className="inline-flex items-center justify-center rounded-lg border border-border bg-background p-2 text-xs font-medium transition-colors hover:bg-muted"
-            >
-              <ArrowRight className="h-4 w-4" />
-            </Link>
+            <div className="flex gap-2">
+              <Link
+                href="/teacher/schedule"
+                className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-2 py-1 text-xs font-medium transition-colors hover:bg-muted"
+              >
+                <CalendarClock className="mr-1 h-3 w-3" />
+                View Schedule
+              </Link>
+              <Link
+                href="/teacher/timetable"
+                className="inline-flex items-center justify-center rounded-lg border border-border bg-background p-2 text-xs font-medium transition-colors hover:bg-muted"
+              >
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
           </CardHeader>
           <CardContent className="flex-1 space-y-2.5">
             {todaySchedule.length > 0 ? (

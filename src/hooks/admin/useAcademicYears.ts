@@ -8,6 +8,7 @@ export interface AcademicYear {
   startDate: string; // or Date
   endDate: string; // or Date
   isActive: boolean;
+  weeklyOffDays?: string[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -35,6 +36,7 @@ export function useAdminAcademicYears() {
       label: string;
       startDate: string;
       endDate: string;
+      weeklyOffDays?: string[];
     }) => {
       const res = await axios.post<ApiResponse>(
         "/api/admin/academic-years",
@@ -61,6 +63,7 @@ export function useAdminAcademicYears() {
         label: string;
         startDate: string;
         endDate: string;
+        weeklyOffDays?: string[];
       }>;
     }) => {
       const res = await axios.patch<ApiResponse>(

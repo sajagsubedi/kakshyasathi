@@ -77,10 +77,12 @@ export const GET = withHandler(async (_req, context: RouteContext) => {
 
   const globalPeriodMap = new Map<number, { startTime: string; endTime: string }>();
   globalPeriods.forEach((p) => {
-    globalPeriodMap.set(p.periodNumber, {
-      startTime: p.startTime,
-      endTime: p.endTime,
-    });
+    if (p.slotType === "period" && p.periodNumber && !globalPeriodMap.has(p.periodNumber)) {
+      globalPeriodMap.set(p.periodNumber, {
+        startTime: p.startTime,
+        endTime: p.endTime,
+      });
+    }
   });
 
   const studentDocIds = students.map((s) => s._id);

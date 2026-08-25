@@ -7,6 +7,9 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  Calendar,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { PageHeader } from "@/components/shared/PageHeader";
 import { StatCard } from "@/components/shared/StatCard";
@@ -86,7 +89,31 @@ function getSectionLabel(
 
 export default function AdminAttendancePage() {
   const [sectionFilter, setSectionFilter] = React.useState("ALL");
-  const today = new Date().toISOString().split("T")[0];
+  const [selectedDate, setSelectedDate] = React.useState(new Date());
+  const today = new Date();
+  
+  const formatDateForAPI = (date: Date) => {
+    return date.toISOString().split("T")[0];
+  };
+
+  const formatDisplayDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', { 
+      weekday: 'short', 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    });
+  };
+
+  const navigateDate = (days: number) => {
+    const newDate = new Date(selectedDate);
+    newDate.setDate(newDate.getDate() + days);
+    setSelectedDate(newDate);
+  };
+
+  const goToToday = () => {
+    setSelectedDate(new Date());
+  };
 
   const { data: sectionsData } = useAdminSections({
     page: 1,
@@ -94,7 +121,7 @@ export default function AdminAttendancePage() {
   });
 
   const { data: attendanceData } = useAdminAttendance({
-    date: today,
+    date: formatDateForAPI(selectedDate),
     section: sectionFilter === "ALL" ? undefined : sectionFilter,
     view: "students",
     page: 1,
@@ -164,25 +191,63 @@ export default function AdminAttendancePage() {
           accent="primary"
         />
       </div>
-      <Select
-        value={sectionFilter}
-        onValueChange={(value) => setSectionFilter(value || "ALL")}
-      >
-        <SelectTrigger className="mb-4 w-full sm:w-56">
-          <SelectValue placeholder="Filter section" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="ALL">All Sections</SelectItem>
-          {sections.map((s) => (
-            <SelectItem key={s._id} value={s._id}>
-              {sectionLabel(s)}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      
+      <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigateDate(-1)}
+            className="h-8 w-8"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => navigateDate(1)}
+            className="h-8 w-8"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={goToToday}
+            className="h-8"
+          >
+            Today
+          </Button>
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg border bg-background">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm font-medium">{formatDisplayDate(selectedDate)}</span>
+          </div>
+        </div>
+        
+        <Select
+          value={sectionFilter}
+          onValueChange={(value) => setSectionFilter(value || "ALL")}
+        >
+          <SelectTrigger className="w-full sm:w-56">
+            <SelectValue placeholder="Filter section" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Sections</SelectItem>
+            {sections.map((s) => (
+              <SelectItem key={s._id} value={s._id}>
+                {sectionLabel(s)}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Today&apos;s Records</CardTitle>
+          <CardTitle className="text-base">
+            {formatDateForAPI(selectedDate) === formatDateForAPI(today) 
+              ? "Today's Records" 
+              : `Records for ${formatDisplayDate(selectedDate)}`}
+          </CardTitle>
         </CardHeader>
         <Table>
           <TableHeader>
